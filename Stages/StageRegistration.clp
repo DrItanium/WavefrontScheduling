@@ -31,16 +31,19 @@
  (initial-fact)
  =>
  (assert (Stage 
+          OriginalityAssertion
           Fixup 
 					FixupUpdate
 					FixupRename
+          FixupRegions
+          FixupProducers
           Analysis 
           ExtendedMemoryAnalysis
           Path
-			 PathUpdate
+			    PathUpdate
           WavefrontInit
           WavefrontSchedule
-			 WavefrontFinal
+			    WavefrontFinal
           Final)))
 
 
