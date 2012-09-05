@@ -70,7 +70,7 @@
 (defrule RetractEmptyReopenFact
 				 (Stage WavefrontSchedule $?)
 				 (Substage ReopenBlocks $?)
-				 ?fct <- (From ?cpv reopen)
+				 ?fct <- (From ? reopen)
 				 =>
 				 (retract ?fct))
 

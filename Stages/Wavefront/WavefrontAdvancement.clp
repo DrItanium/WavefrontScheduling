@@ -86,7 +86,7 @@
 				 (declare (salience 100))
 				 (Stage WavefrontSchedule $?)
 				 (Substage AdvanceEnd $?)
-				 ?fct <- (Add into ?id blocks)
+				 ?fct <- (Add into ? blocks)
 				 =>
 				 (retract ?fct))
 

@@ -81,7 +81,7 @@
 (defrule RetractPathBuildUp
          (Stage WavefrontSchedule $?)
          (Substage Identify $?)
-         ?fct <- (Build paths for ?e from)
+         ?fct <- (Build paths for ? from)
          =>
          (retract ?fct))
 
@@ -153,7 +153,7 @@
          ;(declare (salience -100))
          (Stage WavefrontSchedule $?)
          (Substage Strip $?)
-         ?fct <- (Scan path ?p for block ?e with contents)
+         ?fct <- (Scan path ? for block ? with contents)
          =>
          (retract ?fct))
 

@@ -47,7 +47,7 @@
 				 (declare (salience -50))
 				 (Stage WavefrontSchedule $?)
 				 (Substage Identify $?)
-				 ?fct <- (Propagate aggregates of ?e)
+				 ?fct <- (Propagate aggregates of ?)
 				 =>
 				 (retract ?fct))
 
