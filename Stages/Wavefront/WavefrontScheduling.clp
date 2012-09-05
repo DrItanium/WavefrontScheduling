@@ -87,7 +87,7 @@
          (declare (salience -100))
          (Stage WavefrontSchedule $?)
          (Substage Strip $?)
-         ?f0 <- (PotentiallyValid blocks for ?e are)
+         ?f0 <- (PotentiallyValid blocks for ? are)
          =>
          (retract ?f0))
 
@@ -109,7 +109,7 @@
          (Stage WavefrontSchedule $?)
          (Substage Inject $?)
          ;get the Mrs. Hitler birth certificate
-         ?fct<- (PotentiallyValid blocks for ?e are)
+         ?fct<- (PotentiallyValid blocks for ? are)
          =>
          (retract ?fct))
 
@@ -129,7 +129,7 @@
          (Stage WavefrontSchedule $?)
          (Substage Inject $?)
          ;get the Mrs. Hitler birth certificate
-         ?fct <- (CompletelyInvalid blocks for ?e are)
+         ?fct <- (CompletelyInvalid blocks for ? are)
          =>
          (retract ?fct))
 
@@ -193,7 +193,7 @@
 (defrule RetractValidCPVsForBlock
          (Stage WavefrontSchedule $?)
          (Substage Acquire $?)
-         ?fct <- (For ?e find CPVs for)
+         ?fct <- (For ? find CPVs for)
          =>
          (retract ?fct))
 
@@ -433,7 +433,7 @@
 (defrule RemoveSliceAnalysisFact
          (Stage WavefrontSchedule $?)
          (Substage Slice $?)
-         ?fct <- (Generate slices for block ?e in ?r with cpv ?cpv with stop block ?b using paths)
+         ?fct <- (Generate slices for block ? in ? with cpv ? with stop block ? using paths)
          =>
          (retract ?fct))
 
@@ -458,6 +458,7 @@
          (test (> (length$ ?cpvIDs) 0))
          =>
          (modify-instance ?agObj (TargetCompensationPathVectors $?cpvIDs)))
+
 (defrule SetifyTargetCompensationPathVectors
          (Stage WavefrontSchedule $?)
          (Substage AnalyzeInit $?)
@@ -510,7 +511,7 @@
 (defrule RetractCPVSegmentationFact
          (Stage WavefrontSchedule $?)
          (Substage Analyze $?)
-         ?fct <- (Analyze block ?a for ?b using cpvs)
+         ?fct <- (Analyze block ? for ? using cpvs)
          =>
          (retract ?fct))
 
