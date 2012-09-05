@@ -63,8 +63,9 @@
 				 (modify-instance ?block (Parent ?r))
 				 (slot-insert$ ?region Contents 1 ?element)
 				 (retract ?fct))
+
 (defrule InjectElementsIntoNewBlock-Retract
-				 ?fct <- (Put into ?r elements)
+				 ?fct <- (Put into ? elements)
 				 =>
 				 (retract ?fct))
 ;------------------------------------------------------------------------------
