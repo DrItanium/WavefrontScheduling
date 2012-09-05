@@ -251,7 +251,7 @@
          (Stage WavefrontSchedule $?)
          (Substage Acquire $?)
          ?fct <- (Get CPVs out of ?pv for ?e using ?inst $?insts)
-         (object (is-a Instruction) (ID ?isnt) (IsTerminator FALSE) (HasCallDependency FALSE))
+         (object (is-a Instruction) (ID ?inst) (IsTerminator FALSE) (HasCallDependency FALSE))
          =>
          ;(printout t "Tagged " ?inst " as valid for " ?e crlf)
          ;(facts)
