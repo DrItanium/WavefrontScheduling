@@ -209,7 +209,7 @@
          ;(declare (salience 343))
          (Stage WavefrontSchedule $?)
          (Substage ResetScheduling $?)
-         ?fct <- (Perform Schedule ?n for ?b)
+         ?fct <- (Perform Schedule ?n for ?)
          ?sched <- (object (is-a Schedule) (ID ?n)
                            (Contents))
          =>
@@ -263,7 +263,7 @@
          (Stage WavefrontSchedule $?)
          (Substage ResetScheduling $?)
          (object (is-a Schedule) (ID ?n)
-                 (Parent ?p)
+         ;        (Parent ?p)
                  (Contents) (Success) (Failure $?elements))
          (test (> (length$ ?elements) 0))
          =>
@@ -384,6 +384,7 @@
          (llvm-schedule-block ?tPtr ?contents)
          (retract ?f1 ?f2)
          (unmake-instance ?hint ?hint2))
+
 (defrule RetractMergeHints
          (declare (salience -25))
          (Stage WavefrontSchedule $?)
@@ -396,13 +397,13 @@
          (declare (salience -26))
          (Stage WavefrontSchedule $?)
          (Substage LLVMUpdate $?)
-         ?fct <- (Update style for ?p is $?)
+         ?fct <- (Update style for ? is $?)
          =>
          (retract ?fct))
 (defrule RetractScheduleHint
          (declare (salience -100))
          (Stage WavefrontSchedule $?)
          (Substage LLVMUpdate $?)
-         ?fct <- (Schedule ?p using ?n in llvm)
+         ?fct <- (Schedule ? using ? in llvm)
          =>
          (retract ?fct))
