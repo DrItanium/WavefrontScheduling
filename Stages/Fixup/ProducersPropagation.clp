@@ -24,7 +24,7 @@
 ;SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (defrule PropagateBlockProducers
 				 (declare (salience 100))
-				 (Stage Fixup $?)
+				 (Stage FixupProducers $?)
 				 (object (is-a BasicBlock) (ID ?b) (Parent ?r) 
 								 (Produces $?produces))
 				 =>
@@ -32,7 +32,7 @@
 
 (defrule PropagateRegionProducers-ParentExists
 				 (declare (salience 50))
-				 (Stage Fixup $?)
+				 (Stage FixupProducers $?)
 				 ?fct <- (Give ?r from ? the following produced items $?produced)
 				 ?region <- (object (is-a Region) (ID ?r) (Parent ?p))
 				 (exists (object (is-a Region) (ID ?p)))
@@ -43,7 +43,7 @@
 
 (defrule PropagateRegionProducers-ParentDoesntExist
 				 (declare (salience 50))
-				 (Stage Fixup $?)
+				 (Stage FixupProducers $?)
 				 ?fct <- (Give ?r from ? the following produced items $?produced)
 				 ?region <- (object (is-a Region) (ID ?r) (Parent ?p))
 				 (not (exists (object (is-a Region) (ID ?p))))
@@ -52,7 +52,7 @@
 				 (slot-insert$ ?region Produces 1 ?produced))
 
 (defrule IdentifyNonLocalDependencies
-				 (Stage Fixup $?)
+				 (Stage FixupProducers $?)
 				 ?i0 <- (object (is-a Instruction) (Parent ?p) (ID ?t0) 
 												(Operands $? ?op $?))
 				 (object (is-a Instruction) (ID ?op) (Parent ~?p))

@@ -26,6 +26,12 @@
 ; LoopRegionMerging.clp - Contains rules that merge loops and regions together
 ; Written by Joshua Scoggins (6/26/2012)
 ;------------------------------------------------------------------------------
+(defrule DeclareOriginality
+				 (declare (salience 1000))
+				 (Stage OriginalityAssertion $?)
+				 (object (is-a Region) (ID ?i) (Parent ?p))
+				 =>
+				 (assert (Region ?i is originally owned by ?p)))
 (defrule ReplaceRegionWithLoop
 				 "Replaces a region with a loop if it turns out that the region is a container
 				 over a given loop (it's the only element in the region). The loop takes the
@@ -63,9 +69,8 @@
 				 (modify-instance ?block (Parent ?r))
 				 (slot-insert$ ?region Contents 1 ?element)
 				 (retract ?fct))
-
 (defrule InjectElementsIntoNewBlock-Retract
-				 ?fct <- (Put into ? elements)
+				 ?fct <- (Put into ?r elements)
 				 =>
 				 (retract ?fct))
 ;------------------------------------------------------------------------------
@@ -78,13 +83,14 @@
 				 ;(printout t "element " ?e " in " ?r " is owned by " ?z "!" crlf)
 				 (assert (Parent of ?e is now ?r)
 								 (Rename: In ?z put ?r in place of ?e)))
+
 (defrule RetractImpossibleReplaceStatements
-				 (declare (salience 1))
 				 (Stage FixupRename $?)
-				 ?f0 <- (Rename: In ?r put ?t in place of $?)
+				 ?f0 <- (Rename: In ?r put ?t in place of $?q)
 				 (not (exists (object (ID ?r))))
 				 =>
 				 (retract ?f0))
+
 (defrule MergePutStatements
 				 (declare (salience 1))
 				 (Stage FixupRename $?)
@@ -102,7 +108,7 @@
 				 ?loop <- (object (is-a Loop) (ID ?l&~?r) (Contents $?b))
 				 (test (subsetp ?a ?b))
 				 =>
-				 ;(printout t "Replacing " ?a " with " ?r crlf)
+				 ;(printout t "Replacing " ?a " with " ?r " in " ?l crlf)
 				 (assert (In ?l put ?r in place of $?a)))
 
 (defrule MergeElementsFromLoop
@@ -147,6 +153,7 @@
 				 (test (eq FALSE (member$ ?t (send ?region get-Contents))))
 				 =>
 				 (retract ?fct)
+				 (assert (Added ?t to ?r as part of replacement strategy))
 				 (slot-insert$ ?region Contents 1 ?t))
 
 (defrule ReplaceOwnershipOfIllegalElements-Final-JustRetract
@@ -155,6 +162,7 @@
 				 ?region <- (object (is-a Region) (ID ?r))
 				 (test (neq FALSE (member$ ?t (send ?region get-Contents))))
 				 =>
+				 (assert (Added ?t to ?r as part of replacement strategy))
 				 (retract ?fct))
 
 (defrule ReplaceParentOfGivenItem
@@ -163,4 +171,40 @@
 				 ?o0 <- (object (ID ?t))
 				 =>
 				 (retract ?fct)
+				 ;(printout t ?r " is now the parent of " ?t crlf)
 				 (modify-instance ?o0 (Parent ?r)))
+;(defrule FixupRegions-Printout
+; (declare (salience 100))
+; (Stage FixupRegions $?)
+; =>
+; (facts))
+(defrule FixupRegions-ParentExists
+				 (declare (salience 1))
+				 (Stage FixupRegions $?)
+				 ?f0 <- (Region ?r is originally owned by ?t)
+				 ?f1 <- (Added ?r to ?s as part of replacement strategy)
+				 ?oldParent <- (object (is-a Region) (ID ?t) (Contents $?a ?r $?b))
+				 ?region <- (object (is-a Region) (Class Region) (ID ?r) (Parent ?t))
+				 =>
+				 (retract ?f0 ?f1)
+				 ;(printout t ?s " is now the parent of " ?r " instead of " ?t crlf)
+				 (send ?region put-Parent ?s)
+				 (modify-instance ?oldParent (Contents $?a $?b)))
+
+(defrule FixupRegions-ParentDoesntExist
+				 (declare (salience 1))
+				 (Stage FixupRegions $?)
+				 ?f0 <- (Region ?r is originally owned by ?t)
+				 ?f1 <- (Added ?r to ?s as part of replacement strategy)
+				 (not (exists (object (ID ?t))))
+				 =>
+				 (retract ?f0 ?f1))
+
+
+(defrule FixupRegions-NoChange
+				 (Stage FixupRegions $?)
+				 ?f0 <- (Region ?r is originally owned by ?)
+				 (not (exists (Added ?r to ? as part of replacement strategy)))
+				 =>
+				 (retract ?f0))
+
