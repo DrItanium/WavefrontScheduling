@@ -66,10 +66,10 @@
 				 (object (is-a BasicBlock) (ID ?p) (Parent ?r))
 				 =>
 				 (retract ?fct)
-				 (assert (block ?p reads from UNKNOWN)
+				 (assert (element ?p reads from UNKNOWN)
 								 (instruction ?t0 memory target UNKNOWN)
-								 (Block ?p has a MemoryBarrier)
-								 (Region ?r has a MemoryBarrier)))
+								 (Element ?p has a MemoryBarrier)
+								 (Element ?r has a MemoryBarrier)))
 ;------------------------------------------------------------------------------
 (defrule PopulateBasicBlockWithReadFrom-Alloca
 				 "Does a check to see if the load instruction refers directly to an
@@ -83,7 +83,7 @@
 				 =>
 				 (retract ?fct)
 				 (assert (instruction ?t0 memory target ?target)
-								 (block ?p reads from ?target)))
+								 (element ?p reads from ?target)))
 ;------------------------------------------------------------------------------
 (defrule PopulateBasicBlockWithReadFrom-Constant
 				 "Does a check to see if the load instruction refers directly to an
@@ -97,7 +97,7 @@
 				 =>
 				 (retract ?fct)
 				 (assert (instruction ?t0 memory target ?target)
-								 (block ?p reads from ?target)))
+								 (element ?p reads from ?target)))
 ;------------------------------------------------------------------------------
 (defrule PopulateBasicBlockWithReadFrom-GetElementPointer-Alloca
 				 "Does a check to see if a given LoadInstruction referring to a
@@ -112,7 +112,7 @@
 				 =>
 				 (retract ?fct)
 				 (assert (instruction ?t0 memory target ?a)
-								 (block ?p reads from ?a)))
+								 (element ?p reads from ?a)))
 ;------------------------------------------------------------------------------
 (defrule PopulateBasicBlockWithReadFrom-GetElementPointer-Constant
 				 "Does a check to see if a given LoadInstruction referring to a
@@ -127,7 +127,7 @@
 				 =>
 				 (retract ?fct)
 				 (assert (instruction ?t0 memory target ?a)
-								 (block ?p reads from ?a)))
+								 (element ?p reads from ?a)))
 ;------------------------------------------------------------------------------
 (defrule IdentifyGeneralLoadBarrier
 				 "Creates a load memory barrier hint if it turns out that the load instruction
@@ -141,9 +141,9 @@
 				 =>
 				 (retract ?fct)
 				 (assert (instruction ?t0 memory target UNKNOWN)
-								 (block ?p reads from UNKNOWN)
-								 (Block ?p has a MemoryBarrier)
-								 (Region ?r has a MemoryBarrier)))
+								 (element ?p reads from UNKNOWN)
+								 (Element ?p has a MemoryBarrier)
+								 (Element ?r has a MemoryBarrier)))
 ;------------------------------------------------------------------------------
 (defrule IdentifyGetElementPointerStoreBarrier
 				 "Creates a load memory barrier hint if it turns out that the load instruction
@@ -160,9 +160,9 @@
 				 =>
 				 (retract ?fct)
 				 (assert (instruction ?t0 memory target UNKNOWN)
-								 (block ?p writes to UNKNOWN)
-								 (Block ?p has a MemoryBarrier)
-								 (Region ?r has a MemoryBarrier)))
+								 (element ?p writes to UNKNOWN)
+								 (Element ?p has a MemoryBarrier)
+								 (Element ?r has a MemoryBarrier)))
 ;------------------------------------------------------------------------------
 (defrule PopulateBasicBlockWithWriteTo-Alloca
 				 "Does a check to see if the load instruction refers directly to an
@@ -179,7 +179,7 @@
 				 ; crlf)
 				 (retract ?fct)
 				 (assert (instruction ?t0 memory target ?target)
-								 (block ?p writes to ?target)))
+								 (element ?p writes to ?target)))
 ;------------------------------------------------------------------------------
 (defrule PopulateBasicBlockWithWriteTo-Constant
 				 "Does a check to see if the load instruction refers directly to an
@@ -196,7 +196,7 @@
 				 ;(printout t "(assert (instruction " ?t0 " memory target " ?a "))"
 				 ; crlf)
 				 (assert (instruction ?t0 memory target ?target)
-								 (block ?p writes to ?target)))
+								 (element ?p writes to ?target)))
 ;------------------------------------------------------------------------------
 (defrule PopulateBasicBlockWithWriteTo-Single-Alloca
 				 "Does a check to see if the load instruction refers directly to an
@@ -211,7 +211,7 @@
 				 ; (printout t ?t0 " has target " ?target crlf)
 				 (retract ?fct)
 				 (assert (instruction ?t0 memory target ?target)
-								 (block ?p writes to ?target)))
+								 (element ?p writes to ?target)))
 ;------------------------------------------------------------------------------
 (defrule PopulateBasicBlockWithWriteTo-Single-Constant
 				 "Does a check to see if the load instruction refers directly to an
@@ -226,7 +226,7 @@
 				 ;(printout t ?t0 " has target " ?target crlf)
 				 (retract ?fct)
 				 (assert (instruction ?t0 memory target ?target)
-								 (block ?p writes to ?target)))
+								 (element ?p writes to ?target)))
 ;------------------------------------------------------------------------------
 (defrule PopulateBasicBlockWithWriteTo-GetElementPointer-Alloca
 				 "Does a check to see if a given StoreInstruction referring to a
@@ -243,7 +243,7 @@
 				 ;(printout t ?t0 " has target " ?target crlf)
 				 (retract ?fct)
 				 (assert (instruction ?t0 memory target ?a)
-								 (block ?p writes to ?a)))
+								 (element ?p writes to ?a)))
 ;------------------------------------------------------------------------------
 (defrule PopulateBasicBlockWithWriteTo-GetElementPointer-Constant
 				 "Does a check to see if a given StoreInstruction referring to a
@@ -259,7 +259,7 @@
 				 ;(printout t ?t0 " has target " ?target crlf)
 				 (retract ?fct)
 				 (assert (instruction ?t0 memory target ?a)
-								 (block ?p writes to ?a)))
+								 (element ?p writes to ?a)))
 ;------------------------------------------------------------------------------
 (defrule IdentifyGeneralStoreBarrier
 				 "Creates a load memory barrier hint if it turns out that the load instruction
@@ -272,184 +272,96 @@
 				 (object (is-a BasicBlock) (ID ?p) (Parent ?r))
 				 =>
 				 (retract ?fct)
-				 (assert (block ?p writes to UNKNOWN)
+				 (assert (element ?p writes to UNKNOWN)
 								 (instruction ?t0 memory target UNKNOWN)
-								 (Block ?p has a MemoryBarrier)
-								 (Region ?r has a MemoryBarrier)))
+								 (Element ?p has a MemoryBarrier)
+								 (Element ?r has a MemoryBarrier)))
 ;------------------------------------------------------------------------------
-(defrule InsertIntoBlockReadsFrom-ParentDoesntExist
-				 "Puts the target value into the target basic block's ReadsFrom multifield"
-				 (declare (salience -9))
-				 (Stage Analysis $?)
-				 ?fct <- (block ?p reads from ?t)
-				 ?bb <- (object (is-a BasicBlock) (ID ?p) (Parent ?q))
-				 (not (exists (object (is-a Region) (ID ?q))))
-				 =>
-				 (retract ?fct)
-				 (slot-insert$ ?bb ReadsFrom 1 ?t))
-;------------------------------------------------------------------------------
-(defrule InsertIntoBlockReadsFrom
-				 "Puts the target value into the target basic block's ReadsFrom multifield"
-				 (declare (salience -9))
-				 (Stage Analysis $?)
-				 ?fct <- (block ?p reads from ?t)
-				 ?bb <- (object (is-a BasicBlock) (ID ?p) (Parent ?q))
-				 (exists (object (is-a Region) (ID ?q)))
-				 =>
-				 (retract ?fct)
-				 (assert (Region ?q reads from ?t))
-				 (slot-insert$ ?bb ReadsFrom 1 ?t))
-;------------------------------------------------------------------------------
-(defrule InsertIntoBlockWritesTo-ParentDoesntExist
-				 "Puts the target value into the target basic block's ReadsFrom multifield"
-				 (declare (salience -9))
-				 (Stage Analysis $?)
-				 ?fct <- (block ?p writes to ?t)
-				 ?bb <- (object (is-a BasicBlock) (ID ?p) (Parent ?q))
-				 (not (exists (object (is-a Region) (ID ?q))))
-				 =>
-				 (retract ?fct)
-				 (slot-insert$ ?bb WritesTo 1 ?t))
-;------------------------------------------------------------------------------
-(defrule InsertIntoBlockWritesTo
-				 "Puts the target value into the target basic block's ReadsFrom multifield"
-				 (declare (salience -9))
-				 (Stage Analysis $?)
-				 ?fct <- (block ?p writes to ?t)
-				 ?bb <- (object (is-a BasicBlock) (ID ?p) (Parent ?q))
-				 (exists (object (is-a Region) (ID ?q)))
-				 =>
-				 (retract ?fct)
-				 (assert (Region ?q writes to ?t))
-				 (slot-insert$ ?bb WritesTo 1 ?t))
-;------------------------------------------------------------------------------
-(defrule InsertIntoRegionReadsFrom-ParentDoesntExist
-				 "Puts the target value into the target basic block's ReadsFrom multifield"
-				 (declare (salience -9))
-				 (Stage Analysis $?)
-				 ?fct <- (Region ?p reads from ?t)
-				 ?bb <- (object (is-a Region) (ID ?p) (Parent ?q))
-				 (not (exists (object (is-a Region) (ID ?q))))
-				 =>
-				 (retract ?fct)
-				 (slot-insert$ ?bb ReadsFrom 1 ?t))
-;------------------------------------------------------------------------------
-(defrule InsertIntoRegionReadsFrom
-				 "Puts the target value into the target basic block's ReadsFrom multifield"
-				 (declare (salience -9))
-				 (Stage Analysis $?)
-				 ?fct <- (Region ?p reads from ?t)
-				 ?bb <- (object (is-a Region) (ID ?p) (Parent ?q))
-				 (exists (object (is-a Region) (ID ?q)))
-				 =>
-				 (retract ?fct)
-				 (assert (Region ?q reads from ?t))
-				 (slot-insert$ ?bb ReadsFrom 1 ?t))
-;------------------------------------------------------------------------------
-(defrule InsertIntoRegionWritesTo-ParentDoesntExist
-				 "Puts the target value into the target basic block's ReadsFrom multifield"
-				 (declare (salience -9))
-				 (Stage Analysis $?)
-				 ?fct <- (Region ?p writes to ?t)
-				 ?bb <- (object (is-a Region) (ID ?p) (Parent ?q))
-				 (not (exists (object (is-a Region) (ID ?q))))
-				 =>
-				 (retract ?fct)
-				 (slot-insert$ ?bb WritesTo 1 ?t))
-;------------------------------------------------------------------------------
-(defrule InsertIntoRegionWritesTo
-				 "Puts the target value into the target basic block's ReadsFrom multifield"
-				 (declare (salience -9))
-				 (Stage Analysis $?)
-				 ?fct <- (Region ?p writes to ?t)
-				 ?bb <- (object (is-a Region) (ID ?p) (Parent ?q))
-				 (exists (object (is-a Region) (ID ?q)))
-				 =>
-				 (retract ?fct)
-				 (assert (Region ?q writes to ?t))
-				 (slot-insert$ ?bb WritesTo 1 ?t))
-;------------------------------------------------------------------------------
-(defrule UpdateBlockHasMemoryBarrier
-				 (declare (salience -10))
-				 (Stage Analysis $?)
-				 ?fct <- (Block ?b has a MemoryBarrier)
-				 ?obj <- (object (is-a BasicBlock) (ID ?b) (HasMemoryBarrier FALSE) (Parent ?p))
-				 (exists (object (is-a Region) (ID ?p)))
-				 =>
-				 (retract ?fct)
-				 (assert (Region ?p has a MemoryBarrier))
-				 (modify-instance ?obj (HasMemoryBarrier TRUE)))
-;------------------------------------------------------------------------------
-(defrule RetractBlockHasMemoryBarrier
-				 (declare (salience -10))
-				 (Stage Analysis $?)
-				 ?fct <- (Block ?b has a MemoryBarrier)
-				 ?obj <- (object (is-a BasicBlock) (ID ?b) (HasMemoryBarrier TRUE) (Parent ?p))
-				 (exists (object (is-a Region) (ID ?p)))
-				 =>
-				 (assert (Region ?p has a MemoryBarrier))
-				 (retract ?fct))
-;------------------------------------------------------------------------------
-(defrule UpdateBlockHasMemoryBarrier-ParentIsntObject
-				 (declare (salience -10))
-				 (Stage Analysis $?)
-				 ?fct <- (Block ?b has a MemoryBarrier)
-				 ?obj <- (object (is-a BasicBlock) (ID ?b) (HasMemoryBarrier FALSE) 
-												 (Parent ?p))
-				 (not (exists (object (is-a Region) (ID ?p))))
-				 =>
-				 (retract ?fct)
-				 (modify-instance ?obj (HasMemoryBarrier TRUE)))
-;------------------------------------------------------------------------------
-(defrule RetractBlockHasMemoryBarrier-ParentIsntObject
-				 (declare (salience -10))
-				 (Stage Analysis $?)
-				 ?fct <- (Block ?b has a MemoryBarrier)
-				 ?obj <- (object (is-a BasicBlock) (ID ?b) (HasMemoryBarrier TRUE) (Parent ?p))
-				 (not (exists (object (is-a Region) (ID ?p))))
-				 =>
-				 (retract ?fct))
-;------------------------------------------------------------------------------
-(defrule UpdateRegionHasMemoryBarrier
-				 (declare (salience -10))
-				 (Stage Analysis $?)
-				 ?fct <- (Region ?b has a MemoryBarrier)
-				 ?obj <- (object (is-a Region) (ID ?b) (HasMemoryBarrier FALSE) (Parent ?p))
-				 (exists (object (is-a Region) (ID ?p)))
-				 =>
-				 (retract ?fct)
-				 (assert (Region ?p has a MemoryBarrier))
-				 (modify-instance ?obj (HasMemoryBarrier TRUE)))
-;------------------------------------------------------------------------------
-(defrule RetractRegionHasMemoryBarrier
-				 (declare (salience -10))
-				 (Stage Analysis $?)
-				 ?fct <- (Region ?b has a MemoryBarrier)
-				 ?obj <- (object (is-a Region) (ID ?b) (HasMemoryBarrier TRUE) (Parent ?p))
-				 (exists (object (is-a Region) (ID ?p)))
-				 =>
-				 (assert (Region ?p has a MemoryBarrier))
-				 (retract ?fct))
-;------------------------------------------------------------------------------
-(defrule UpdateRegionHasMemoryBarrier-ParentIsntObject
-				 (declare (salience -10))
-				 (Stage Analysis $?)
-				 ?fct <- (Region ?b has a MemoryBarrier)
-				 ?obj <- (object (is-a Region) (ID ?b) (HasMemoryBarrier FALSE) (Parent ?p))
-				 (not (exists (object (is-a Region) (ID ?p))))
-				 =>
-				 (retract ?fct)
-				 (modify-instance ?obj (HasMemoryBarrier TRUE)))
-;------------------------------------------------------------------------------
-(defrule RetractRegionHasMemoryBarrier-ParentIsntObject
-				 (declare (salience -10))
-				 (Stage Analysis $?)
-				 ?fct <- (Region ?b has a MemoryBarrier)
-				 ?obj <- (object (is-a Region) (ID ?b) (HasMemoryBarrier TRUE) (Parent ?p))
-				 (not (exists (object (is-a Region) (ID ?p))))
-				 =>
-				 (retract ?fct))
-;------------------------------------------------------------------------------
+(defrule InsertIntoDiplomatReadsFrom-ParentDoesntExist
+         (declare (salience -9))
+         (Stage Analysis $?)
+         ?fct <- (element ?p reads from ?t)
+         ?bb <- (object (is-a Diplomat) (ID ?p) (Parent ?q))
+         (not (exists (object (is-a Diplomat) (ID ?q))))
+         =>
+         (retract ?fct)
+         (slot-insert$ ?bb ReadsFrom 1 ?t))
+
+(defrule InsertIntoDiplomatReadsFrom-ParentExists
+         (declare (salience -9))
+         (Stage Analysis $?)
+         ?fct <- (element ?p reads from ?t)
+         ?bb <- (object (is-a Diplomat) (ID ?p) (Parent ?q))
+         (exists (object (is-a Diplomat) (ID ?q)))
+         =>
+         (retract ?fct)
+         (assert (element ?q reads from ?t))
+         (slot-insert$ ?bb ReadsFrom 1 ?t))
+
+(defrule InsertIntoDiplomatWritesTo-ParentDoesntExist
+         (declare (salience -9))
+         (Stage Analysis $?)
+         ?fct <- (element ?p writes to ?t)
+         ?bb <- (object (is-a Diplomat) (ID ?p) (Parent ?q))
+         (not (exists (object (is-a Diplomat) (ID ?q))))
+         =>
+         (retract ?fct)
+         (slot-insert$ ?bb WritesTo 1 ?t))
+
+(defrule InsertIntoDiplomatWritesTo-ParentExists
+         (declare (salience -9))
+         (Stage Analysis $?)
+         ?fct <- (element ?p writes to ?t)
+         ?bb <- (object (is-a Diplomat) (ID ?p) (Parent ?q))
+         (exists (object (is-a Diplomat) (ID ?q)))
+         =>
+         (retract ?fct)
+         (assert (element ?q writes to ?t))
+         (slot-insert$ ?bb WritesTo 1 ?t))
+(defrule UpdateDiplomatHasMemoryBarrier
+         (declare (salience -10))
+         (Stage Analysis $?)
+         ?fct <- (Element ?b has a MemoryBarrier)
+         ?obj <- (object (is-a Diplomat) (ID ?b) (HasMemoryBarrier FALSE)
+           (Parent ?p))
+         (exists (object (is-a Diplomat) (ID ?p)))
+         =>
+         (retract ?fct)
+         (assert (Element ?p has a MemoryBarrier))
+         (modify-instance ?obj (HasMemoryBarrier TRUE)))
+
+(defrule RetractDiplomatHasMemoryBarrier
+         (declare (salience -10))
+         (Stage Analysis $?)
+         ?fct <- (Element ?b has a MemoryBarrier)
+         ?obj <- (object (is-a Diplomat) (ID ?b) (HasMemoryBarrier TRUE)
+           (Parent ?p))
+         (exists (object (is-a Diplomat) (ID ?p)))
+         =>
+         (retract ?fct)
+         (assert (Element ?p has a MemoryBarrier)))
+
+(defrule UpdateDiplomatHasMemoryBarrier-ParentDoesntExist
+         (declare (salience -10))
+         (Stage Analysis $?)
+         ?fct <- (Element ?b has a MemoryBarrier)
+         ?obj <- (object (is-a Diplomat) (ID ?b) (HasMemoryBarrier FALSE)
+           (Parent ?p))
+         (not (exists (object (is-a Diplomat) (ID ?p))))
+         =>
+         (retract ?fct)
+         (modify-instance ?obj (HasMemoryBarrier TRUE)))
+
+(defrule RetractDiplomatHasMemoryBarrier-ParentDoesntExist
+         (declare (salience -10))
+         (Stage Analysis $?)
+         ?fct <- (Element ?b has a MemoryBarrier)
+         ?obj <- (object (is-a Diplomat) (ID ?b) (HasMemoryBarrier TRUE)
+           (Parent ?p))
+         (not (exists (object (is-a Diplomat) (ID ?p))))
+         =>
+         (retract ?fct))
+
 (defrule SetMemoryTargetForInstruction
 				 (declare (salience -10))
 				 (Stage Analysis $?)
