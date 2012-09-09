@@ -64,7 +64,7 @@
          (object (is-a CallInstruction) (ID ?name) (Parent ?p)
                  (MayWriteToMemory TRUE))
          =>
-         (assert (Block ?p has a CallBarrier))
+         (assert (Element ?p has a CallBarrier))
          (foreach ?following ?rest
                   (assert (Instruction ?following has a CallDependency)
                           ;(Instruction ?following consumes ?name)
@@ -77,7 +77,7 @@
          (object (is-a BasicBlock) (ID ?p) (Contents $? ?name $?rest))
          (object (is-a CallInstruction) (ID ?name) (Parent ?p) (IsInlineAsm TRUE))
          =>
-         (assert (Block ?p has a CallBarrier))
+         (assert (Element ?p has a CallBarrier))
          (foreach ?following ?rest
                   (assert (Instruction ?following has a CallDependency)
                           ;(Instruction ?following consumes ?name)
@@ -91,7 +91,7 @@
                  (MayHaveSideEffects TRUE)) 
          (object (is-a BasicBlock) (ID ?p) (Contents $? ?name $?rest))
          =>
-         (assert (Block ?p has a CallBarrier))
+         (assert (Element ?p has a CallBarrier))
          (foreach ?following ?rest
                   (assert (Instruction ?following has a CallDependency)
                           ;(Instruction ?following consumes ?name)
@@ -175,62 +175,50 @@
          (slot-insert$ ?inst LocalDependencies 1 ?insts)
          (slot-insert$ ?inst Producers 1 ?insts))
 ;------------------------------------------------------------------------------
-(defrule FlagCallBarrierForRegion-ImbueParent
-         "Marks the given region has having a call barrier"
+(defrule FlagCallBarrierForDiplomat-HasParent
          (declare (salience -10))
          (Stage Analysis $?)
-         ?fct <- (Region ?r has a CallBarrier)
-         ?region <- (object (is-a Region) (ID ?r) (Parent ?p))
-         (exists (object (is-a Region) (ID ?p)))
+         ?fct <- (Element ?z has a CallBarrier)
+         ?d <- (object (is-a Diplomat) (ID ?z) (Parent ?p) 
+                       (HasCallBarrier FALSE))
+         (exists (object (is-a Diplomat) (ID ?p)))
          =>
          (retract ?fct)
-         (assert (Region ?p has a CallBarrier))
-         (modify-instance ?region (HasCallBarrier TRUE)))
-;------------------------------------------------------------------------------
-(defrule FlagCallBarrierForRegion
-         "Marks the given region has having a call barrier"
+         (assert (Element ?p has a CallBarrier))
+         (modify-instance ?d (HasCallBarrier TRUE)))
+
+(defrule PropagateCallBarrierForDiplomat-HasParent
          (declare (salience -10))
          (Stage Analysis $?)
-         ?fct <- (Region ?r has a CallBarrier)
-         ?region <- (object (is-a Region) (ID ?r) (Parent ?p))
-         (not (exists (object (is-a Region) (ID ?p))))
+         ?fct <- (Element ?z has a CallBarrier)
+         ?d <- (object (is-a Diplomat) (ID ?z) (Parent ?p) 
+                       (HasCallBarrier TRUE))
+         (exists (object (is-a Diplomat) (ID ?p)))
          =>
          (retract ?fct)
-         (modify-instance ?region (HasCallBarrier TRUE)))
-;------------------------------------------------------------------------------
-(defrule FlagCallBarrierForLoop
-         "Marks the given region has having a call barrier"
+         (assert (Element ?p has a CallBarrier)))
+
+(defrule FlagCallBarrierForDiplomat-NoParent
          (declare (salience -10))
          (Stage Analysis $?)
-         ?fct <- (Region ?r has a CallBarrier)
-         ?region <- (object (is-a Loop) (ID ?r) (Parent ?p))
-         (not (exists (object (is-a Region) (Parent ?p))))
+         ?fct <- (Element ?z has a CallBarrier)
+         ?d <- (object (is-a Diplomat) (ID ?z) (Parent ?p) 
+                       (HasCallBarrier FALSE))
+         (not (exists (object (is-a Diplomat) (ID ?p))))
          =>
          (retract ?fct)
-         (modify-instance ?region (HasCallBarrier TRUE)))
-;------------------------------------------------------------------------------
-(defrule FlagCallBarrierForLoop-ImbueParent
-         "Marks the given region has having a call barrier"
+         (modify-instance ?d (HasCallBarrier TRUE)))
+
+(defrule PropagateCallBarrierForDiplomat-NoParent
          (declare (salience -10))
          (Stage Analysis $?)
-         ?fct <- (Region ?r has a CallBarrier)
-         ?region <- (object (is-a Loop) (ID ?r) (Parent ?p))
-         (exists (object (is-a Region) (ID ?p)))
+         ?fct <- (Element ?z has a CallBarrier)
+         ?d <- (object (is-a Diplomat) (ID ?z) (Parent ?p) 
+                       (HasCallBarrier TRUE))
+         (not (exists (object (is-a Diplomat) (ID ?p))))
          =>
-         (retract ?fct)
-         (assert (Region ?p has a CallBarrier))
-         (modify-instance ?region (HasCallBarrier TRUE)))
-;------------------------------------------------------------------------------
-(defrule FlagCallBarrierForBasicBlock
-         "Marks the given region has having a call barrier"
-         (declare (salience -10))
-         (Stage Analysis $?)
-         ?fct <- (Block ?r has a CallBarrier)
-         ?block <- (object (is-a BasicBlock) (ID ?r) (Parent ?p))
-         =>
-         (retract ?fct)
-         (assert (Region ?p has a CallBarrier))
-         (modify-instance ?block (HasCallBarrier TRUE)))
+         (retract ?fct))
+
 ;------------------------------------------------------------------------------
 (defrule MarkHasACallDependency
          (Stage Analysis $?)
