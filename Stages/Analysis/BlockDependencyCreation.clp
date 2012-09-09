@@ -27,112 +27,189 @@
 ; data dependencies between different instructions inside of a basic block
 ; Written by Joshua Scoggins (7/1/2012)
 ;------------------------------------------------------------------------------
-(defrule IdentifyWAR
-				 "Identifies a WAR dependency between two instructions. It will not match if it
-				 turns out the values are constant integers or constant floating point values"
-				 (Stage Analysis $?)
-				 ?i0 <- (object (is-a Instruction) (Parent ?p) (ID ?t0)
-												(SourceRegisters $? ?c $?) (TimeIndex ?ti0))
-				 (object (is-a TaggedObject&~ConstantInteger&~ConstantFloatingPoint) (ID ?c))
-				 ?i1 <- (object (is-a Instruction) (Parent ?p) (ID ?t1)
-												(TimeIndex ?ti1&:(< ?ti0 ?ti1)) (DestinationRegisters $? ?c $?))
-				 =>
-				 (assert (Instruction ?t1 consumes ?t0)
-								 (Instruction ?t0 produces ?t1)))
-;------------------------------------------------------------------------------
-(defrule IdentifyRAW
-				 "Identifies a RAW dependency between two instructions in the same block. It
-				 will not match if it turns out that the values are constant integers or
-				 constant floating point values."
-				 (Stage Analysis $?)
-				 (object (is-a Instruction) (Parent ?p) (ID ?t0)
-								 (DestinationRegisters $? ?c $?) (TimeIndex ?ti0))
-				 (object (is-a TaggedObject&~ConstantInteger&~ConstantFloatingPoint) (ID ?c))
-				 (object (is-a Instruction) (Parent ?p) (ID ?t1)
-								 (SourceRegisters $? ?c $?) (TimeIndex ?ti1&:(< ?ti0 ?ti1)))
-				 =>
-				 (assert (Instruction ?t1 consumes ?t0)
-								 (Instruction ?t0 produces ?t1)))
-;------------------------------------------------------------------------------
-(defrule IdentifyWAW
-				 "Identifies a WAW dependency between two instructions in the same block. It
-				 will not match if it turns out that the values are constant integers or
-				 constant floating point values."
-				 (Stage Analysis $?)
-				 ?i0 <- (object (is-a Instruction) (Parent ?p) (ID ?t0)
-												(DestinationRegisters $? ?c $?) (TimeIndex ?ti0))
-				 (object (is-a TaggedObject&~ConstantInteger&~ConstantFloatingPoint) (ID ?c))
-				 ?i1 <- (object (is-a Instruction) (Parent ?p) (ID ?t1) (TimeIndex ?ti1&:(< ?ti0 ?ti1))
-												(DestinationRegisters $? ?c $?))
-				 =>
-				 (assert (Instruction ?t1 consumes ?t0)
-								 (Instruction ?t0 produces ?t1)))
+(defrule MarkLocalDependency 
+         (Stage Analysis $?)
+         ?i0 <- (object (is-a Instruction) (Parent ?p) (ID ?t0) 
+           (Operands $? ?o $?))
+         (object (is-a Instruction) (ID ?o) (Parent ?p))
+         =>
+         (assert (Instruction ?o produces ?t0)
+                 (Instruction ?t0 consumes ?o)))
+;(defrule IdentifyWAR
+;				 "Identifies a WAR dependency between two instructions. It will not match if it
+;				 turns out the values are constant integers or constant floating point values"
+;				 (Stage Analysis $?)
+;				 ?i0 <- (object (is-a Instruction) (Parent ?p) (ID ?t0)
+;												(SourceRegisters $? ?c $?) (TimeIndex ?ti0))
+;				 (object (is-a TaggedObject&~ConstantInteger&~ConstantFloatingPoint) (ID ?c))
+;				 ?i1 <- (object (is-a Instruction) (Parent ?p) (ID ?t1)
+;												(TimeIndex ?ti1&:(< ?ti0 ?ti1)) (DestinationRegisters $? ?c $?))
+;				 =>
+;				 (assert (Instruction ?t1 consumes ?t0)
+;								 (Instruction ?t0 produces ?t1)))
+;;------------------------------------------------------------------------------
+;(defrule IdentifyRAW
+;				 "Identifies a RAW dependency between two instructions in the same block. It
+;				 will not match if it turns out that the values are constant integers or
+;				 constant floating point values."
+;				 (Stage Analysis $?)
+;				 (object (is-a Instruction) (Parent ?p) (ID ?t0)
+;								 (DestinationRegisters $? ?c $?) (TimeIndex ?ti0))
+;				 (object (is-a TaggedObject&~ConstantInteger&~ConstantFloatingPoint) (ID ?c))
+;				 (object (is-a Instruction) (Parent ?p) (ID ?t1)
+;								 (SourceRegisters $? ?c $?) (TimeIndex ?ti1&:(< ?ti0 ?ti1)))
+;				 =>
+;				 (assert (Instruction ?t1 consumes ?t0)
+;								 (Instruction ?t0 produces ?t1)))
+;;------------------------------------------------------------------------------
+;(defrule IdentifyWAW
+;				 "Identifies a WAW dependency between two instructions in the same block. It
+;				 will not match if it turns out that the values are constant integers or
+;				 constant floating point values."
+;				 (Stage Analysis $?)
+;				 ?i0 <- (object (is-a Instruction) (Parent ?p) (ID ?t0)
+;												(DestinationRegisters $? ?c $?) (TimeIndex ?ti0))
+;				 (object (is-a TaggedObject&~ConstantInteger&~ConstantFloatingPoint) (ID ?c))
+;				 ?i1 <- (object (is-a Instruction) (Parent ?p) (ID ?t1) (TimeIndex ?ti1&:(< ?ti0 ?ti1))
+;												(DestinationRegisters $? ?c $?))
+;				 =>
+;				 (assert (Instruction ?t1 consumes ?t0)
+;								 (Instruction ?t0 produces ?t1)))
 ;------------------------------------------------------------------------------
 (defrule MarkInstructionsThatHappenBeforeCall-WritesToMemory
-				 (Stage Analysis $?)
-				 (object (is-a CallInstruction) (ID ?n0) (Parent ?p)
-								 (MayWriteToMemory TRUE) (TimeIndex ?t0))
-				 (object (is-a Instruction) (ID ?n1) (Parent ?p) (TimeIndex ?t1&:(> ?t0 ?t1)))
-				 =>
-				 (assert (Instruction ?n0 consumes ?n1)
-								 (Instruction ?n1 produces ?n0)))
+ (Stage Analysis $?)
+ (object (is-a BasicBlock) (ID ?v) (Contents $?before ?n0 $?))
+ (object (is-a CallInstruction) (ID ?n0) (Parent ?v) (MayWriteToMemory TRUE))
+ =>
+ (foreach ?n1 ?before
+  (assert (Instruction ?n0 consumes ?n1)
+          (Instruction ?n1 produces ?n0))))
+;(defrule MarkInstructionsThatHappenBeforeCall-WritesToMemory
+;				 (Stage Analysis $?)
+;				 (object (is-a CallInstruction) (ID ?n0) (Parent ?p)
+;								 (MayWriteToMemory TRUE) (TimeIndex ?t0))
+;				 (object (is-a Instruction) (ID ?n1) (Parent ?p) (TimeIndex ?t1&:(> ?t0 ?t1)))
+;				 =>
+;				 (assert (Instruction ?n0 consumes ?n1)
+;								 (Instruction ?n1 produces ?n0)))
 ;------------------------------------------------------------------------------
 (defrule MarkInstructionsThatHappenBeforeCall-HasSideEffects
-				 (Stage Analysis $?)
-				 (object (is-a CallInstruction) (ID ?n0) (Parent ?p)
-								 (MayHaveSideEffects TRUE) (TimeIndex ?t0))
-				 (object (is-a Instruction) (ID ?n1) (Parent ?p) (TimeIndex ?t1&:(> ?t0 ?t1)))
-				 =>
-				 (assert (Instruction ?n0 consumes ?n1)
-								 (Instruction ?n1 produces ?n0)))
+         (Stage Analysis $?)
+         (object (is-a BasicBlock) (ID ?p) (Contents $?a ?n0 $?))
+         (object (is-a CallInstruction) (ID ?n0) (Parent ?p)
+                 (MayHaveSideEffects TRUE))
+         =>
+         (foreach ?n1 ?a
+         (assert (Instruction ?n0 consumes ?n1)
+                 (Instruction ?n1 produces ?n0))))
+;(defrule MarkInstructionsThatHappenBeforeCall-HasSideEffects
+;				 (Stage Analysis $?)
+;				 (object (is-a CallInstruction) (ID ?n0) (Parent ?p)
+;								 (MayHaveSideEffects TRUE) (TimeIndex ?t0))
+;				 (object (is-a Instruction) (ID ?n1) (Parent ?p) (TimeIndex ?t1&:(> ?t0 ?t1)))
+;				 =>
+;				 (assert (Instruction ?n0 consumes ?n1)
+;								 (Instruction ?n1 produces ?n0)))
 ;------------------------------------------------------------------------------
 (defrule MarkCallInstructionDependency-ModifiesMemory
-				 "Creates a series of dependencies for all instructions following a call
-				 instruction if it turns out that the call could modify memory."
-				 (Stage Analysis $?)
-				 (object (is-a CallInstruction) (ID ?name) (Parent ?p) 
-								 (DoesNotAccessMemory FALSE) (OnlyReadsMemory FALSE) (MayWriteToMemory TRUE)
-								 (TimeIndex ?t0))
-				 ?bb <- (object (is-a BasicBlock) (ID ?p) (Parent ?r) (Contents $? ?name $? ?following $?))
-				 ;(object (is-a LoadInstruction|StoreInstruction) (ID ?following) (Parent ?p)
-				 ; (TimeIndex ?t1&:(< ?t0 ?t1)))
-				 =>
-				 (assert (Region ?r has a CallBarrier)
-								 (Block ?p has a CallBarrier)
-								 (Instruction ?following has a CallDependency)
-								 (Instruction ?following consumes ?name)
-								 (Instruction ?name produces ?following)))
+         "Creates a series of dependencies for all instructions following a call
+         instruction if it turns out that the call could modify memory."
+         (Stage Analysis $?)
+         (object (is-a BasicBlock) (ID ?p) (Contents $? ?name $?rest))
+         (object (is-a CallInstruction) (ID ?name) (Parent ?p)
+          (MayWriteToMemory TRUE))
+                 ;(DoesNotAccessMemory FALSE) (OnlyReadsMemory FALSE) (MayWriteToMemory TRUE)
+                 ;(TimeIndex ?t0))
+         ;?bb <- (object (is-a BasicBlock) (ID ?p) (Parent ?r) (Contents $? ?name $? ?following $?))
+         ;(object (is-a LoadInstruction|StoreInstruction) (ID ?following) (Parent ?p)
+         ; (TimeIndex ?t1&:(< ?t0 ?t1)))
+         =>
+         (assert (Block ?p has a CallBarrier))
+         (foreach ?following ?rest
+                  (assert (Instruction ?following has a CallDependency)
+                          ;(Instruction ?following consumes ?name)
+                          (Instruction ?name produces ?following))))
 ;------------------------------------------------------------------------------
 (defrule MarkCallInstructionDependency-InlineAsm
-				 "Creates a series of dependencies for all instructions following a call
-				 instruction if it turns out that the call is inline asm."
-				 (Stage Analysis $?)
-				 (object (is-a CallInstruction) (ID ?name) (Parent ?p) (IsInlineAsm TRUE))
-				 ?bb <- (object (is-a BasicBlock) (ID ?p) (Parent ?r) (Contents $? ?name $? ?following $?))
-				 ;(object (is-a Instruction) (ID ?following))
-				 =>
-				 (assert (Region ?r has a CallBarrier)
-								 (Block ?p has a CallBarrier)
-								 (Instruction ?following has a CallDependency)
-								 (Instruction ?following consumes ?name)
-								 (Instruction ?name produces ?following)))
+         "Creates a series of dependencies for all instructions following a call
+         instruction if it turns out that the call is inline asm."
+         (Stage Analysis $?)
+         (object (is-a BasicBlock) (ID ?p) (Contents $? ?name $?rest))
+         (object (is-a CallInstruction) (ID ?name) (Parent ?p) (IsInlineAsm TRUE))
+         ;?bb <- (object (is-a BasicBlock) (ID ?p) (Parent ?r) (Contents $? ?name $? ?following $?))
+         ;(object (is-a Instruction) (ID ?following))
+         =>
+         (assert (Block ?p has a CallBarrier))
+         (foreach ?following ?rest
+                  (assert (Instruction ?following has a CallDependency)
+                          ;(Instruction ?following consumes ?name)
+                          (Instruction ?name produces ?following))))
 ;------------------------------------------------------------------------------
 (defrule MarkCallInstructionDependency-SideEffects
-				 "Creates a series of dependencies for all instructions following a call
-				 instruction if it turns out that the call is inline asm."
-				 (Stage Analysis $?)
-				 (object (is-a CallInstruction) (ID ?name) (Parent ?p)
-								 (MayHaveSideEffects TRUE) (MayWriteToMemory TRUE) (TimeIndex
-																																		 ?t0))
-				 ?bb <- (object (is-a BasicBlock) (ID ?p) (Parent ?r) (Contents $? ?name $? ?following $?))
-				 ;(object (is-a LoadInstruction|StoreInstruction) (ID ?following) (Parent ?p)
-				 ; (TimeIndex ?t1&:(< ?t0 ?t1)))
-				 =>
-				 (assert (Region ?r has a CallBarrier)
-								 (Block ?p has a CallBarrier)
-								 (Instruction ?following has a CallDependency)
-								 (Instruction ?following consumes ?name)
-								 (Instruction ?name produces ?following)))
+         "Creates a series of dependencies for all instructions following a call
+         instruction if it turns out that the call is inline asm."
+         (Stage Analysis $?)
+         (object (is-a CallInstruction) (ID ?name) (Parent ?p)
+                 (MayHaveSideEffects TRUE)) 
+         ;(MayWriteToMemory TRUE))
+                 ;(TimeIndex ?t0))
+         (object (is-a BasicBlock) (ID ?p) (Contents $? ?name $?rest))
+         ;?bb <- (object (is-a BasicBlock) (ID ?p) (Parent ?r) (Contents $? ?name $? ?following $?))
+         ;(object (is-a LoadInstruction|StoreInstruction) (ID ?following) (Parent ?p)
+         ; (TimeIndex ?t1&:(< ?t0 ?t1)))
+         =>
+         (assert (Block ?p has a CallBarrier))
+         (foreach ?following ?rest
+                  (assert (Instruction ?following has a CallDependency)
+                          ;(Instruction ?following consumes ?name)
+                          (Instruction ?name produces ?following))))
+;(defrule MarkCallInstructionDependency-ModifiesMemory
+;				 "Creates a series of dependencies for all instructions following a call
+;				 instruction if it turns out that the call could modify memory."
+;				 (Stage Analysis $?)
+;				 (object (is-a CallInstruction) (ID ?name) (Parent ?p) 
+;								 (DoesNotAccessMemory FALSE) (OnlyReadsMemory FALSE) (MayWriteToMemory TRUE)
+;								 (TimeIndex ?t0))
+;				 ?bb <- (object (is-a BasicBlock) (ID ?p) (Parent ?r) (Contents $? ?name $? ?following $?))
+;				 ;(object (is-a LoadInstruction|StoreInstruction) (ID ?following) (Parent ?p)
+;				 ; (TimeIndex ?t1&:(< ?t0 ?t1)))
+;				 =>
+;				 (assert (Region ?r has a CallBarrier)
+;								 (Block ?p has a CallBarrier)
+;								 (Instruction ?following has a CallDependency)
+;								 (Instruction ?following consumes ?name)
+;								 (Instruction ?name produces ?following)))
+;;------------------------------------------------------------------------------
+;(defrule MarkCallInstructionDependency-InlineAsm
+;				 "Creates a series of dependencies for all instructions following a call
+;				 instruction if it turns out that the call is inline asm."
+;				 (Stage Analysis $?)
+;				 (object (is-a CallInstruction) (ID ?name) (Parent ?p) (IsInlineAsm TRUE))
+;				 ?bb <- (object (is-a BasicBlock) (ID ?p) (Parent ?r) (Contents $? ?name $? ?following $?))
+;				 ;(object (is-a Instruction) (ID ?following))
+;				 =>
+;				 (assert (Region ?r has a CallBarrier)
+;								 (Block ?p has a CallBarrier)
+;								 (Instruction ?following has a CallDependency)
+;								 (Instruction ?following consumes ?name)
+;								 (Instruction ?name produces ?following)))
+;;------------------------------------------------------------------------------
+;(defrule MarkCallInstructionDependency-SideEffects
+;				 "Creates a series of dependencies for all instructions following a call
+;				 instruction if it turns out that the call is inline asm."
+;				 (Stage Analysis $?)
+;				 (object (is-a CallInstruction) (ID ?name) (Parent ?p)
+;								 (MayHaveSideEffects TRUE) (MayWriteToMemory TRUE) (TimeIndex
+;																																		 ?t0))
+;				 ?bb <- (object (is-a BasicBlock) (ID ?p) (Parent ?r) (Contents $? ?name $? ?following $?))
+;				 ;(object (is-a LoadInstruction|StoreInstruction) (ID ?following) (Parent ?p)
+;				 ; (TimeIndex ?t1&:(< ?t0 ?t1)))
+;				 =>
+;				 (assert (Region ?r has a CallBarrier)
+;								 (Block ?p has a CallBarrier)
+;								 (Instruction ?following has a CallDependency)
+;								 (Instruction ?following consumes ?name)
+;								 (Instruction ?name produces ?following)))
 ;------------------------------------------------------------------------------
 (defrule MergeConsumers
 				 (declare (salience -2))
@@ -278,28 +355,28 @@
 				 (if (not (send ?inst get-HasCallDependency)) then
 					 (modify-instance ?inst (HasCallDependency TRUE))))
 ;------------------------------------------------------------------------------
-(defrule SetifyInstructionProducers
-				 (declare (salience -11))
-				 (Stage Analysis $?)
-				 ?inst <- (object (is-a Instruction) (Producers $?a ?b $?c ?b $?d))
-				 =>
-				 (modify-instance ?inst (Producers $?a ?b $?c $?d)))
-;------------------------------------------------------------------------------
-
-(defrule SetifyInstructionConsumers
-				 (declare (salience -11))
-				 (Stage Analysis $?)
-				 ?inst <- (object (is-a Instruction) (Consumers $?a ?b $?c ?b $?d))
-				 =>
-				 (modify-instance ?inst (Consumers $?a ?b $?c $?d)))
-
-;------------------------------------------------------------------------------
-(defrule SetifyLocalDependencies
-				 (declare (salience -11))
-				 (Stage Analysis $?)
-				 ?inst <- (object (is-a Instruction) (LocalDependencies $?a ?b $?c ?b $?d))
-				 =>
-				 (modify-instance ?inst (LocalDependencies $?a ?b $?c $?d)))
+;(defrule SetifyInstructionProducers
+;				 (declare (salience -11))
+;				 (Stage Analysis $?)
+;				 ?inst <- (object (is-a Instruction) (Producers $?a ?b $?c ?b $?d))
+;				 =>
+;				 (modify-instance ?inst (Producers $?a ?b $?c $?d)))
+;;------------------------------------------------------------------------------
+;
+;(defrule SetifyInstructionConsumers
+;				 (declare (salience -11))
+;				 (Stage Analysis $?)
+;				 ?inst <- (object (is-a Instruction) (Consumers $?a ?b $?c ?b $?d))
+;				 =>
+;				 (modify-instance ?inst (Consumers $?a ?b $?c $?d)))
+;
+;;------------------------------------------------------------------------------
+;(defrule SetifyLocalDependencies
+;				 (declare (salience -11))
+;				 (Stage Analysis $?)
+;				 ?inst <- (object (is-a Instruction) (LocalDependencies $?a ?b $?c ?b $?d))
+;				 =>
+;				 (modify-instance ?inst (LocalDependencies $?a ?b $?c $?d)))
 
 ;------------------------------------------------------------------------------
 (defrule ExtendedInjectConsumers
