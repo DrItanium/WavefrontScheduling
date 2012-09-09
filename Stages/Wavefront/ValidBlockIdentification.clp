@@ -29,6 +29,8 @@
          (Stage WavefrontSchedule $?)
          (Substage Identify $?)
          (object (is-a Hint) (Type Wavefront) (Parent ?r) (Contents $? ?e $?))
+         ;select only BasicBlocks
+         (object (is-a BasicBlock) (ID ?e))
          =>
          (assert (Picked ?e for ?r)))
 
@@ -48,31 +50,18 @@
          (Stage WavefrontSchedule $?)
          (Substage Identify $?)
          ?fct <- (Picked ?e for ?r)
-         ?bb <- (object (is-a BasicBlock) (ID ?e)
-                        (Paths $?paths))
+         ?bb <- (object (is-a BasicBlock) (ID ?e) (Paths $?paths))
          (test (not (send ?bb .IsSplitBlock)))
          =>
          (retract ?fct)
          (modify-instance ?bb (IsOpen TRUE))
          (assert (Build paths for ?e from $?paths)))
 
-(defrule SkipRegion
-         (declare (salience 50))
-         (Stage WavefrontSchedule $?)
-         (Substage Identify $?)
-         ?fct <- (Picked ?e for ?r)
-         ?region <- (object (is-a Region) (ID ?e))
-         =>
-         (retract ?fct))
-
 (defrule BuildUpPaths
          (declare (salience 25))
          (Stage WavefrontSchedule $?)
          (Substage Identify $?)
          ?fct <- (Build paths for ?e from ?path $?paths)
-         (object (is-a Path) (ID ?path) (Contents $?c))
-         ;not necessary
-         ;(test (neq FALSE (member$ ?e $?c)))
          =>
          (retract ?fct)
          (assert (Build paths for ?e from $?paths)
@@ -96,6 +85,7 @@
          (printout t "BEFORE: Wavefront Pathing " crlf crlf)
          (facts)
          (printout t crlf crlf))
+
 (defrule DispatchDivideBlock
          (declare (salience 200))
          (Stage WavefrontSchedule $?)
@@ -150,20 +140,11 @@
 
 
 (defrule RetractCompletedFact
-         ;(declare (salience -100))
          (Stage WavefrontSchedule $?)
          (Substage Strip $?)
          ?fct <- (Scan path ? for block ? with contents)
          =>
          (retract ?fct))
-
-;(defrule RetractEmptyFact
-;				 (declare (salience -10))
-;				 (Stage WavefrontSchedule $?)
-;				 (Substage Pathing $?)
-;				 ?fct <- (Check path ?p for block ?e with section)
-;				 =>
-;				 (retract ?fct))
 
 (defrule PrintoutCompletedFacts 
          (declare (salience -999))
