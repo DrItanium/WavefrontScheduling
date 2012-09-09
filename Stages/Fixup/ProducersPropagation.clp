@@ -22,6 +22,7 @@
 ;ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 ;(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 (defrule PropagateBlockProducers
 				 (declare (salience 100))
 				 (Stage Fixup $?)
@@ -55,7 +56,7 @@
 				 (Stage Fixup $?)
 				 ?i0 <- (object (is-a Instruction) (Parent ?p) (ID ?t0) 
 												(Operands $? ?op $?))
-				 (object (is-a Instruction) (ID ?op) (Parent ~?p))
+				 (object (is-a TaggedObject) (ID ?op) (Parent ~?p))
 				 (test (eq FALSE (member$ ?op (send ?i0 get-NonLocalDependencies))))
 				 =>
          ;since we don't copy the set of producers at the start anymore we
