@@ -28,29 +28,15 @@
 ; of
 ; Written by Joshua Scoggins (6/7/2012)
 ;------------------------------------------------------------------------------
-(defrule AddPathToBlock
-				 "Adds the given path name to the target block if it turns out that it's part
-				 of it"
-				 ; make sure that this happens after paths have been made
-				 (declare (salience 1))
-				 (Stage Path $?)
-				 (object (is-a Path) (Closed TRUE) (ID ?i) (Contents $? ?b $?))
-				 ?bb <- (object (is-a BasicBlock) (ID ?b))
-				 (test (eq (member$ ?i (send ?bb get-Paths)) FALSE)) ;we don't have this already
-				 =>
-				 (slot-insert$ ?bb Paths 1 ?i))
-;------------------------------------------------------------------------------
-(defrule AddPathToRegion
-				 "Adds the given path name to the target block if it turns out that it's part
-				 of it"
-				 ; make sure that this happens after paths have been made
-				 (declare (salience 1))
-				 (Stage Path $?)
-				 (object (is-a Path) (Closed TRUE) (ID ?i) (Contents $? ?b $?))
-				 ?bb <- (object (is-a Region) (ID ?b))
-				 (test (eq (member$ ?i (send ?bb get-Paths)) FALSE)) ;we don't have this already
-				 =>
-				 (slot-insert$ ?bb Paths 1 ?i))
+(defrule AddPathToDiplomat
+ "Adds the given path name to the target diplomat"
+ (declare (salience 1))
+ (Stage Path $?)
+ (object (is-a Path) (Closed TRUE) (ID ?i) (Contents $? ?b $?))
+ ?d <- (object (is-a Diplomat) (ID ?b))
+ (test (eq FALSE (member$ ?i (send ?d get-Paths))))
+ =>
+ (slot-insert$ ?d Paths 1 ?i))
 
 (defrule TraversePathForElementInjection
 				 (Stage PathUpdate $?)
