@@ -89,7 +89,7 @@
 													$?rest)
 				 ?inst <- (object (is-a Instruction) (ID ?symbol) (Operands $?operands))
 				 =>
-				 (modify-instance ?inst (Operands) (SourceRegisters))
+				 (modify-instance ?inst (Operands))
 				 (retract ?fct)
 				 (assert (Replace uses of symbol ?from with symbol ?to for instruction 
 													?symbol with operands $?operands)
@@ -114,7 +114,6 @@
 				 (test (neq ?op ?f))
 				 =>
 				 (slot-insert$ ?inst Operands 1 ?op)
-				 (slot-insert$ ?inst SourceRegisters 1 ?op)
 				 (retract ?fct)
 				 (assert (Replace uses of symbol ?f with symbol ?t for instruction ?s with
 													operands $?ops)))
@@ -129,7 +128,6 @@
 				 (test (eq ?op ?f))
 				 =>
 				 (slot-insert$ ?inst Operands 1 ?t)
-				 (slot-insert$ ?inst SourceRegisters 1 ?t)
 				 (retract ?fct)
 				 (assert (Replace uses of symbol ?f with symbol ?t for instruction ?s with
 													operands $?ops)))

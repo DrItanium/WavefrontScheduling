@@ -58,4 +58,7 @@
 				 (object (is-a Instruction) (ID ?op) (Parent ~?p))
 				 (test (eq FALSE (member$ ?op (send ?i0 get-NonLocalDependencies))))
 				 =>
+         ;since we don't copy the set of producers at the start anymore we
+         ;need this operation as well
+         (slot-insert$ ?i0 Producers 1 ?op)
 				 (slot-insert$ ?i0 NonLocalDependencies 1 ?op))
