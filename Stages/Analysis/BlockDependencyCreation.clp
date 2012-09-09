@@ -154,26 +154,26 @@
          (assert (Instruction ?b is produced by ?a)))
 
 ;------------------------------------------------------------------------------
-(defrule InjectConsumers
-         "Adds a given consumer to the target instruction"
-         (declare (salience -6))
-         (Stage Analysis $?)
-         ?fct <- (Instruction ?id is consumed by $?insts)
-         ?inst <- (object (is-a Instruction) (ID ?id))
-         =>
-         (retract ?fct)
-         (slot-insert$ ?inst Consumers 1 ?insts))
-;------------------------------------------------------------------------------
-(defrule InjectProducers
-         "Adds a given producer to the target instruction"
-         (declare (salience -6))
-         (Stage Analysis $?)
-         ?fct <- (Instruction ?id is produced by $?insts)
-         ?inst <- (object (is-a Instruction) (ID ?id))
-         =>
-         (retract ?fct)
-         (slot-insert$ ?inst LocalDependencies 1 ?insts)
-         (slot-insert$ ?inst Producers 1 ?insts))
+;(defrule InjectConsumers
+;         "Adds a given consumer to the target instruction"
+;         (declare (salience -6))
+;         (Stage Analysis $?)
+;         ?fct <- (Instruction ?id is consumed by $?insts)
+;         ?inst <- (object (is-a Instruction) (ID ?id))
+;         =>
+;         (retract ?fct)
+;         (slot-insert$ ?inst Consumers 1 ?insts))
+;;------------------------------------------------------------------------------
+;(defrule InjectProducers
+;         "Adds a given producer to the target instruction"
+;         (declare (salience -6))
+;         (Stage Analysis $?)
+;         ?fct <- (Instruction ?id is produced by $?insts)
+;         ?inst <- (object (is-a Instruction) (ID ?id))
+;         =>
+;         (retract ?fct)
+;         (slot-insert$ ?inst LocalDependencies 1 ?insts)
+;         (slot-insert$ ?inst Producers 1 ?insts))
 ;------------------------------------------------------------------------------
 (defrule FlagCallBarrierForDiplomat-HasParent
          (declare (salience -10))
