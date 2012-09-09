@@ -160,7 +160,7 @@
 (defrule ReplaceParentOfGivenItem
 				 (Stage FixupRename $?)
 				 ?fct <- (Parent of ?t is now ?r)
-				 ?o0 <- (object (ID ?t))
+				 ?o0 <- (object (is-a TaggedObject) (ID ?t))
 				 =>
 				 (retract ?fct)
 				 (modify-instance ?o0 (Parent ?r)))
