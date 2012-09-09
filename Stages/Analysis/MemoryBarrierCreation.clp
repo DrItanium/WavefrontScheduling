@@ -38,7 +38,7 @@
 				 see if it is necessary to create a memory barrier for the given instruction"
 				 (declare (salience 5))
 				 (Stage Analysis $?)
-				 (object (is-a LoadInstruction) (ID ?t0) (SourceRegisters ?target $?))
+				 (object (is-a LoadInstruction) (ID ?t0) (Operands ?target $?))
 				 =>
 				 (assert (Analyze ?target for load ?t0)))
 ;------------------------------------------------------------------------------
@@ -61,7 +61,7 @@
 				 (Stage Analysis $?)
 				 ?fct <- (Analyze ?target for load ?t0)
 				 (object (is-a LoadInstruction) (ID ?t0) (Parent ?p))
-				 (object (is-a GetElementPointerInstruction) (ID ?target) (SourceRegisters ?a $?))
+				 (object (is-a GetElementPointerInstruction) (ID ?target) (Operands ?a $?))
 				 (object (is-a ~AllocaInstruction&~Constant) (ID ?a))
 				 (object (is-a BasicBlock) (ID ?p) (Parent ?r))
 				 =>
@@ -107,7 +107,7 @@
 				 (Stage Analysis $?)
 				 ?fct <- (Analyze ?target for load ?t0)
 				 (object (is-a LoadInstruction) (ID ?t0) (Parent ?p))
-				 (object (is-a GetElementPointerInstruction) (ID ?target) (SourceRegisters ?a $?))
+				 (object (is-a GetElementPointerInstruction) (ID ?target) (Operands ?a $?))
 				 (object (is-a AllocaInstruction) (ID ?a))
 				 =>
 				 (retract ?fct)
@@ -122,7 +122,7 @@
 				 (Stage Analysis $?)
 				 ?fct <- (Analyze ?target for load ?t0)
 				 (object (is-a LoadInstruction) (ID ?t0) (Parent ?p))
-				 (object (is-a GetElementPointerInstruction) (ID ?target) (SourceRegisters ?a $?))
+				 (object (is-a GetElementPointerInstruction) (ID ?target) (Operands ?a $?))
 				 (object (is-a Constant) (ID ?a))
 				 =>
 				 (retract ?fct)
@@ -154,7 +154,7 @@
 				 ?fct <- (Analyze ?target for store ?t0)
 				 (object (is-a StoreInstruction) (Parent ?p) (ID ?t0))
 				 (object (is-a GetElementPointerInstruction) (ID ?target) 
-								 (SourceRegisters ?a $?))
+								 (Operands ?a $?))
 				 (object (is-a ~AllocaInstruction&~Constant) (ID ?a))
 				 (object (is-a BasicBlock) (ID ?p) (Parent ?r))
 				 =>
@@ -237,7 +237,7 @@
 				 ?fct <- (Analyze ?target for store ?t0)
 				 (object (is-a StoreInstruction) (ID ?t0) (Parent ?p))
 				 (object (is-a GetElementPointerInstruction) (ID ?target) 
-								 (SourceRegisters ?a $?))
+								 (Operands ?a $?))
 				 (object (is-a AllocaInstruction) (ID ?a))
 				 =>
 				 ;(printout t ?t0 " has target " ?target crlf)
@@ -253,8 +253,7 @@
 				 (Stage Analysis $?)
 				 ?fct <- (Analyze ?target for store ?t0)
 				 (object (is-a StoreInstruction) (ID ?t0) (Parent ?p))
-				 (object (is-a GetElementPointerInstruction) (ID ?target) 
-								 (SourceRegisters ?a $?))
+				 (object (is-a GetElementPointerInstruction) (ID ?target) (Operands ?a $?))
 				 (object (is-a Constant) (ID ?a))
 				 =>
 				 ;(printout t ?t0 " has target " ?target crlf)

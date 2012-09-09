@@ -54,16 +54,16 @@
  (multislot NonLocalDependencies)
  (multislot Consumers)
  (multislot Producers)
- (multislot DestinationRegisters)
- (multislot SourceRegisters (visibility public)))
+ (multislot DestinationRegisters))
+ ;(multislot SourceRegisters (visibility public)))
  ;(multislot BlocksUsedIn (visibility public)))
  ;(slot InstructionType (type SYMBOL) (default-dynamic nil)))
 ;------------------------------------------------------------------------------
-(defmessage-handler Instruction init after ()
+;(defmessage-handler Instruction init after ()
  ;copy the Operands into SourceRegisters and Producers list
  ;this should save a ton of time... :D
- (bind ?self:SourceRegisters ?self:Operands)
- (bind ?self:Producers ?self:Operands))
+ ;(bind ?self:SourceRegisters ?self:Operands)
+ ;(bind ?self:Producers ?self:Operands))
 ;------------------------------------------------------------------------------
 (defmessage-handler Instruction .IncrementTimeIndex ()
  (bind ?self:TimeIndex (+ 1 ?self:TimeIndex)))

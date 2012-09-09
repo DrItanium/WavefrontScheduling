@@ -237,12 +237,12 @@
          (retract ?fct)
          (assert (Get CPVs out of ?pv for ?e using $?insts)))
 
-(defrule DisableInstructionsDependentOnPhis-SourceRegisters
+(defrule DisableInstructionsDependentOnPhis-Operands
          (declare (salience 1))
          (Stage WavefrontSchedule $?)
          (Substage Acquire $?)
          ?fct <- (Get CPVs out of ?pv for ?e using ?inst $?insts)
-         (object (is-a Instruction) (ID ?inst) (SourceRegisters $? ?reg $?))
+         (object (is-a Instruction) (ID ?inst) (Operands $? ?reg $?))
          (object (is-a PhiNode) (ID ?reg))
          =>
          (retract ?fct)

@@ -43,7 +43,7 @@
 				 ;only look at instructions starting at the original stop index. This
 				 ;prevents unncessary recomputation
 				 (assert (Evaluate ?e for dependencies starting at ?si)))
-
+    
 (defrule IdentifyWAR-Wavefront
 				 "Identifies a WAR dependency between two instructions. It will not match if it
 				 turns out the values are constant integers or constant floating point values"
@@ -51,7 +51,7 @@
 				 (Substage DependencyAnalysis $?)
 				 (Evaluate ?p for dependencies starting at ?si)
 				 ?i0 <- (object (is-a Instruction) (Parent ?p) (ID ?t0)
-												(SourceRegisters $? ?c $?) (TimeIndex ?ti0))
+												(Operands $? ?c $?) (TimeIndex ?ti0))
 				 (object (is-a TaggedObject&~ConstantInteger&~ConstantFloatingPoint) (ID ?c))
 				 ?i1 <- (object (is-a Instruction) (Parent ?p) (ID ?t1)
 												(TimeIndex ?ti1&:(and (>= ?ti1 ?si) (< ?ti0 ?ti1)))
@@ -71,7 +71,7 @@
 								 (DestinationRegisters $? ?c $?) (TimeIndex ?ti0))
 				 (object (is-a TaggedObject&~ConstantInteger&~ConstantFloatingPoint) (ID ?c))
 				 (object (is-a Instruction) (Parent ?p) (ID ?t1)
-								 (SourceRegisters $? ?c $?) 
+								 (Operands $? ?c $?) 
 								 (TimeIndex ?ti1&:(and (>= ?ti1 ?si) (< ?ti0 ?ti1))))
 				 =>
 				 (assert (Instruction ?t1 consumes ?t0)
