@@ -33,8 +33,7 @@
 				 (Stage Analysis $?)
 				 (object (is-a Region) (Class Region) (ID ?p) (CanWavefrontSchedule FALSE))
 				 =>
-				 (make-instance (gensym*) of FrequencyAnalysis (Parent ?p) 
-												(Point BasicBlockCount)))
+				 (make-instance of FrequencyAnalysis (Parent ?p)))
 ;------------------------------------------------------------------------------
 (defrule IncrementFrequencyCounter-BasicBlock
 				 "Goes through a given Region counting the number of basic blocks found within
@@ -43,9 +42,9 @@
 				 (declare (salience 210))
 				 (Stage Analysis $?)
 				 (object (is-a Region) (ID ?p) (Contents $? ?t $?) (CanWavefrontSchedule FALSE))
-				 ?bb <- (object (is-a BasicBlock) (ID ?t) (Parent ?p))
-				 ?fa <- (object (is-a FrequencyAnalysis) (Parent ?p) (Point BasicBlockCount))
-				 (test (> (length$ (send ?bb get-Contents)) 1))
+				 (object (is-a BasicBlock) (ID ?t) (Parent ?p) (Contents $?insts))
+				 (test (> (length$ $?insts) 1))
+				 ?fa <- (object (is-a FrequencyAnalysis) (Parent ?p))
 				 =>
 				 (send ?fa .IncrementFrequency))
 ;------------------------------------------------------------------------------
@@ -54,7 +53,7 @@
 				 wavefront scheduling. Make a hint that says this. "
 				 (declare (salience 200))
 				 (Stage Analysis $?)
-				 ?fa <- (object (is-a FrequencyAnalysis) (Parent ?p) (Point BasicBlockCount) 
+				 ?fa <- (object (is-a FrequencyAnalysis) (Parent ?p) 
 												(Frequency ?z&:(and (< ?z 100) (> ?z 1))))
 				 ?region <- (object (is-a Region) (ID ?p))
 				 =>
