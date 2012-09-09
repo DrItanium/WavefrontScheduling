@@ -41,7 +41,6 @@
 				 (send ?hint .DecrementReferenceCount)
 				 (retract ?fct)
 				 (make-instance ?newName of Path (Parent ?p) 
-				;								(BackEdgesVisited (send ?hint get-BackEdgesVisited))
 												(Contents (send ?hint get-Contents) ?next)))
 ;------------------------------------------------------------------------------
 (defrule AddToPath-Concat
@@ -78,6 +77,5 @@
 				 (send ?hint .DecrementReferenceCount)
 				 (retract ?fct)
 				 (make-instance ?name of Path (Closed TRUE) (ExitBlock ?bb) 
-				;								(BackEdgesVisited (send ?hint get-BackEdgesVisited))
 												(Contents (send ?hint get-Contents))))
 ;------------------------------------------------------------------------------
