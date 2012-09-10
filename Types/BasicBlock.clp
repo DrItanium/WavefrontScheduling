@@ -27,9 +27,9 @@
 (defclass BasicBlock (is-a Diplomat LLVMValue List)
  (multislot UnlinkedInstructions (visibility public))
  (multislot Predecessors)
- (multislot Successors)
- (multislot ProducingBlocks)
- (multislot ConsumingBlocks))
+ (multislot Successors))
+ ;(multislot ProducingBlocks)
+ ;(multislot ConsumingBlocks))
  ;(multislot InvariantOperands)
  ;(multislot VariantOperands))
  
