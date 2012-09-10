@@ -158,21 +158,21 @@
          (exit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defrule MakeInstructionGroupForSchedulePhase
-         (declare (salience 2701))
-         (Stage WavefrontSchedule $?)
-         (Substage ScheduleObjectUsage $?)
-         ?fct <- (Create InstructionGroup for ?q)
-         ?sched <- (object (is-a Schedule) (ID ?q) (TimeGenerator ?tg)
-                           (Parent ?p) (Groups $?groups))
-         (not (exists (object (is-a InstructionGroup) (TimeIndex ?tg) (Parent ?p))))
-         =>
-         (retract ?fct)
-         (bind ?name (gensym*))
-         ;(printout t "Contents for " ?q " = " (send ?sched get-Contents) crlf)
-         (assert (Perform Schedule ?q for ?p))
-         (make-instance ?name of InstructionGroup (Parent ?p) (TimeIndex ?tg))
-         (modify-instance ?sched (TimeGenerator (+ 1 ?tg)) (Groups ?groups ?name)))
+;(defrule MakeInstructionGroupForSchedulePhase
+;         (declare (salience 2701))
+;         (Stage WavefrontSchedule $?)
+;         (Substage ScheduleObjectUsage $?)
+;         ?fct <- (Create InstructionGroup for ?q)
+;         ?sched <- (object (is-a Schedule) (ID ?q) (TimeGenerator ?tg)
+;                           (Parent ?p) (Groups $?groups))
+;         (not (exists (object (is-a InstructionGroup) (TimeIndex ?tg) (Parent ?p))))
+;         =>
+;         (retract ?fct)
+;         (bind ?name (gensym*))
+;         ;(printout t "Contents for " ?q " = " (send ?sched get-Contents) crlf)
+;         (assert (Perform Schedule ?q for ?p))
+;         (make-instance ?name of InstructionGroup (Parent ?p) (TimeIndex ?tg))
+;         (modify-instance ?sched (TimeGenerator (+ 1 ?tg)) (Groups ?groups ?name)))
 
 (defrule CanScheduleInstructionNow
          (declare (salience 343))
@@ -216,47 +216,35 @@
          (retract ?fct))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defrule ShouldCreateNewInstructionGroup
-         (declare (salience 360))
-         (Stage WavefrontSchedule $?)
-         (Substage ResetScheduling $?)
-         (object (is-a Schedule) (ID ?n) (Success $?len)
-                 (Failure $?fail) (TimeGenerator ?tg))
-         (test (and (> (length$ ?fail) 0) (> (length$ ?len) 0)))
-         =>
-         (assert (Create InstructionGroup for ?n)))
+;(defrule ShouldCreateNewInstructionGroup
+;         (declare (salience 360))
+;         (Stage WavefrontSchedule $?)
+;         (Substage ResetScheduling $?)
+;         (object (is-a Schedule) (ID ?n) (Success $?len)
+;                 (Failure $?fail) (TimeGenerator ?tg))
+;         (test (and (> (length$ ?fail) 0) (> (length$ ?len) 0)))
+;         =>
+;         (assert (Create InstructionGroup for ?n)))
 
 (defrule PutSuccessfulInstructionIntoInstructionGroup
          (declare (salience 270))
          (Stage WavefrontSchedule $?)
          (Substage ResetScheduling $?)
-         ?sched <- (object (is-a Schedule) (ID ?n)
-                           (Parent ?p)
-                           (Success ?targ $?) 
-                           (Groups $? ?last))
-         ?ig <- (object (is-a InstructionGroup) (ID ?last) (Parent ?p)
-                        (TimeIndex ?t))
+         ?sched <- (object (is-a Schedule) (ID ?n) (Parent ?p)
+                           (Success ?targ $?))
          (object (is-a Instruction) (ID ?targ))
          =>
-         (slot-insert$ ?sched Scheduled 1 ?targ)
-         (slot-delete$ ?sched Success 1 1)
-         (slot-insert$ ?ig Contents 1 ?targ))
+         (send ?sched .MarkScheduled ?targ 1))
 
 (defrule PutSuccessfulStoreInstructionIntoInstructionGroup
          (declare (salience 271))
          (Stage WavefrontSchedule $?)
          (Substage ResetScheduling $?)
-         ?sched <- (object (is-a Schedule) (ID ?n)
-                           (Parent ?p)
-                           (Success ?targ $?) 
-                           (Groups $? ?last))
-         ?ig <- (object (is-a InstructionGroup) (ID ?last) (Parent ?p))
+         ?sched <- (object (is-a Schedule) (ID ?n) (Parent ?p)
+                           (Success ?targ $?))
          (object (is-a StoreInstruction) (ID ?targ) (DestinationRegisters ?reg))
          =>
-         ;we need to schedule the target register in as well
-         (slot-insert$ ?sched Scheduled 1 ?targ ?reg)
-         (slot-delete$ ?sched Success 1 1)
-         (slot-insert$ ?ig Contents 1 ?targ))
+         (send ?sched .MarkStoreScheduled ?targ ?reg 1))
 
 (defrule FinishedPopulatingInstructionGroup-AssertReset
          (declare (salience 200))
@@ -306,36 +294,15 @@
          (Schedule ?p using ?n in llvm)
          (object (is-a BasicBlock) (ID ?p) (Contents $? ?last))
          (object (is-a TerminatorInstruction) (ID ?last) (Pointer ?tPtr))
+         (object (is-a Schedule) (Parent ?p) (InstructionStream $?stream))
          =>
-         (bind ?name (gensym*))
-         (bind ?n2 (gensym*))
-         (make-instance ?n2 of Hint (Type SymbolContainer) (Parent ?p))
-         (make-instance ?name of Hint (Type Container) (Parent ?p)
-                        (Point ?tPtr))
-         (assert (Merge ?p at 0 using ?name and ?n2)))
+         (make-instance of Hint (Type SymbolContainer) (Parent ?p) 
+                                (Contents $?stream))
+         (make-instance of Hint (Type Container) (Parent ?p) (Point ?tPtr) 
+                                (Contents (symbol-to-pointer-list ?stream)))
+         (assert (Notify LLVM of changes to ?p)))
 
 
-(defrule ConstructLLVMEncoding 
-         (Stage WavefrontSchedule $?)
-         (Substage InitLLVMUpdate $?)
-         (Schedule ?p using ?n in llvm)
-         ?fct <- (Merge ?p at ?index using ?name and ?n2)
-         (object (is-a Schedule) (Parent ?p) (TimeGenerator ?ti&:(< ?index ?ti)))
-         ?container <- (object (is-a Hint) (ID ?name) (Type Container) 
-                               (Parent ?p))
-         ?sContainer <- (object (is-a Hint) (ID ?n2) (Type SymbolContainer) 
-                                (Parent ?p))
-         (object (is-a InstructionGroup) (TimeIndex ?index) (Parent ?p) 
-                 (Contents $?contents))
-         ;we need to get the elements out correctly...so we drain them out
-         =>
-         (retract ?fct)
-         (assert (Merge ?p at (+ ?index 1) using ?name and ?n2))
-         (bind ?ptrs (symbol-to-pointer-list ?contents))
-         (modify-instance ?sContainer (Contents 
-                                        (send ?sContainer get-Contents) ?contents))
-         (modify-instance ?container (Contents 
-                                       (send ?container get-Contents) ?ptrs)))
 
 (defrule FinishLLVMEncoding-HasPhi
          (declare (salience -12))
@@ -343,8 +310,7 @@
          (Substage LLVMUpdate $?)
          (Schedule ?p using ?n in llvm)
          ?f2 <- (Update style for ?p is ?lastPhi)
-         ?f1 <- (Merge ?p at ?index using ?name and ?n2)
-         (object (is-a Schedule) (Parent ?p) (TimeGenerator ?ti&:(>= ?index ?ti)))
+         ?f1 <- (Notify LLVM of changes to ?p)
          ?hint <- (object (is-a Hint) (ID ?name) (Type Container) (Parent ?p)
                           (Point ?tPtr) (Contents $?contents))
          ?hint2 <- (object (is-a Hint) (ID ?n2) (Type SymbolContainer) 
@@ -353,7 +319,6 @@
                         (Contents $?before ?lastPhi $?instructions ?last $?rest))
          (object (is-a TerminatorInstruction) (ID ?last) (Pointer ?tPtr))
          =>
-         ;(printout t "?symbols = " ?symbols crlf)
          (modify-instance ?bb 
                           (Contents $?before ?lastPhi ?symbols ?last $?rest))
          (llvm-schedule-block ?tPtr ?contents)
@@ -366,8 +331,7 @@
          (Substage LLVMUpdate $?)
          (Schedule ?p using ?n in llvm)
          ?f2 <- (Update style for ?p is)
-         ?f1 <- (Merge ?p at ?index using ?name and ?n2)
-         (object (is-a Schedule) (Parent ?p) (TimeGenerator ?ti&:(>= ?index ?ti)))
+         ?f1 <- (Notify LLVM of changes to ?p)
          ?hint <- (object (is-a Hint) (ID ?name) (Type Container) (Parent ?p)
                           (Point ?tPtr) (Contents $?contents))
          ?hint2 <- (object (is-a Hint) (ID ?n2) (Type SymbolContainer) 
@@ -376,7 +340,6 @@
          (object (is-a TerminatorInstruction) (ID ?last) (Parent ?p) 
                  (Pointer ?tPtr))
          =>
-         ;(printout t "?symbols = " ?symbols crlf)
          (modify-instance ?bb (Contents ?symbols ?last))
          (llvm-schedule-block ?tPtr ?contents)
          (retract ?f1 ?f2)

@@ -28,10 +28,24 @@
  (multislot Scheduled (visibility public))
  (multislot Success (visibility public)) 
  (multislot Failure (visibility public))
- (multislot Groups (visibility public))
+ (multislot InstructionStream (visibility public))
+ ;(multislot Groups (visibility public))
  (slot TimeGenerator (type NUMBER) (default-dynamic 0)))
 
 (defmessage-handler Schedule .ScheduledContainsSubset (?a)
  (subsetp (create$ ?a) ?self:Scheduled))
 (defmessage-handler Schedule .AddScheduledInstruction (?i)
  (bind ?self:Scheduled (create$ ?self:Scheduled ?i)))
+
+(defmessage-handler Schedule .MarkScheduled (?t ?ind)
+ (slot-direct-insert$ Scheduled ?ind ?t)
+ (slot-direct-delete$ Success ?ind ?ind)
+ (slot-direct-insert$ InstructionStream (+ 1 (length$ ?self:Scheduled)) ?t))
+
+(defmessage-handler Schedule .MarkStoreScheduled (?t ?s ?ind)
+ (slot-direct-insert$ Scheduled ?ind ?t ?s)
+ (slot-direct-delete$ Success ?ind ?ind)
+ (slot-direct-insert$ InstructionStream (+ 1 (length$ ?self:Scheduled)) ?t))
+
+
+
