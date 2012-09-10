@@ -900,31 +900,27 @@
          (test (> (length$ (send ?ag get-StalledCompensationPathVectors)) 0))
          =>
          (bind ?container (send ?ag get-StalledCompensationPathVectors))
-         ;(bind ?iContainer (create$))
-         ;(foreach ?z ?container
-         ; (bind ?iContainer (insert$ ?iContainer 1 (send (symbol-to-instance-name ?z)
-         ;                         get-Parent))))
-         ;(printout t "?container = " ?container crlf)
-         ;(printout t "?iContainer = " ?iContainer crlf)
+         (assert (Another Movement Required))
          (modify-instance ?ag (StalledCompensationPathVectors)
                           (TargetCompensationPathVectors ?container)))
 
-(defrule DetermineIfAnotherMovementIsRequired
-         (declare (salience -100))
+(defrule AnotherMovementIsRequired
          (Stage WavefrontSchedule $?)
          ?ponder <- (Substage Ponder $?rest)
+         ?f <- (Another Movement Required)
          =>
          ;this returns a tuple
-         (if (any-instancep ((?inst PathAggregate)) 
-                            (> (length$ ?inst:TargetCompensationPathVectors) 0)) then
-           (retract ?ponder)
-           ;(printout t "Another Movement Required!" crlf)
+           (retract ?ponder ?f)
            (assert (Substage Analyze SliceAnalyze MergeInit Merge MergeUpdate
-                             ReopenBlocks Ponder $?rest))
-           else
+                             ReopenBlocks Ponder $?rest)))
+(defrule FinishSchedulingIntoBlock
+         (declare (salience -1))
+         (Stage WavefrontSchedule $?)
+         (Substage Ponder $?rest)
+         =>
            (bind ?instances (find-all-instances ((?wave Wavefront)) TRUE))
            (foreach ?instance ?instances
                     (bind ?children (send ?instance get-Contents))
                     (foreach ?child ?children
                              (bind ?obj (symbol-to-instance-name ?child))
-                             (modify-instance ?obj (IsOpen FALSE))))))
+                             (modify-instance ?obj (IsOpen FALSE)))))
