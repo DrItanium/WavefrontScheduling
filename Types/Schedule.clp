@@ -28,9 +28,9 @@
  (multislot Scheduled (visibility public))
  (multislot Success (visibility public)) 
  (multislot Failure (visibility public))
- (multislot InstructionStream (visibility public))
+ (multislot InstructionStream (visibility public)))
  ;(multislot Groups (visibility public))
- (slot TimeGenerator (type NUMBER) (default-dynamic 0)))
+; (slot TimeGenerator (type NUMBER) (default-dynamic 0)))
 
 (defmessage-handler Schedule .ScheduledContainsSubset (?a)
  (subsetp (create$ ?a) ?self:Scheduled))
