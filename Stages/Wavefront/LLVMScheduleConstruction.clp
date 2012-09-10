@@ -33,11 +33,11 @@
          (object (is-a BasicBlock) (ID ?e) (Parent ?r)
                  (Contents $? ?lastPhi ?firstNonPhi $?instructions ?last $?))
          (object (is-a PhiNode) (ID ?lastPhi))
-         (object (is-a Instruction&~PhiNode&~TerminatorInstruction) (ID ?firstNonPhi))
+         (object (is-a Instruction&~PhiNode&~TerminatorInstruction) 
+                 (ID ?firstNonPhi))
          =>
          ;strange that ?last is being incorporated into $?q
          (retract ?fct)
-         ;(printout t "Retracted (Schedule " ?e " for " ?r ")" crlf)
          (assert (Update style for ?e is ?lastPhi))
          (make-instance (gensym*) of Schedule (Parent ?e) 
                         (Contents ?firstNonPhi ?instructions)))
@@ -49,11 +49,11 @@
          ?fct <- (Schedule ?e for ?r)
          (object (is-a BasicBlock) (ID ?e) (Parent ?r)
                  (Contents ?firstNonPhi $?instructions ?last $?))
-         (object (is-a Instruction&~PhiNode&~TerminatorInstruction) (ID ?firstNonPhi))
+         (object (is-a Instruction&~PhiNode&~TerminatorInstruction) 
+                 (ID ?firstNonPhi))
          (object (is-a TerminatorInstruction) (Parent ?e) (ID ?last))
          =>
          (retract ?fct)
-         ;(printout t "Retracted (Schedule " ?e " for " ?r ")" crlf)
          (assert (Update style for ?e is))
          (make-instance (gensym*) of Schedule (Parent ?e) 
                         (Contents ?firstNonPhi ?instructions)))
@@ -68,7 +68,6 @@
          (object (is-a TerminatorInstruction) (Parent ?e) (ID ?last))
          =>
          ;mark the block as closed
-         ;(printout t "Retracted (Schedule " ?e " for " ?r ")" crlf)
          (retract ?fct))
 
 (defrule ConstructScheduleObjectForBlock-TerminatorAndPhisOnly
@@ -137,14 +136,6 @@
          =>
          (send ?schedule print))
 
-(defrule AssertCreateInstructionGroup
-         (declare (salience -100))
-         (Stage WavefrontSchedule $?)
-         (Substage ScheduleObjectCreation $?)
-         (object (is-a Schedule) (ID ?q))
-         =>
-         ;(printout t "Fired AssertCreateInstructionGroup for " ?q crlf)
-         (assert (Create InstructionGroup for ?q)))
 (defrule FAIL-SCHEDULE-FACT-STILL-EXISTS
          (declare (salience -200))
          (Stage WavefrontSchedule $?)
@@ -158,34 +149,17 @@
          (exit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;(defrule MakeInstructionGroupForSchedulePhase
-;         (declare (salience 2701))
-;         (Stage WavefrontSchedule $?)
-;         (Substage ScheduleObjectUsage $?)
-;         ?fct <- (Create InstructionGroup for ?q)
-;         ?sched <- (object (is-a Schedule) (ID ?q) (TimeGenerator ?tg)
-;                           (Parent ?p) (Groups $?groups))
-;         (not (exists (object (is-a InstructionGroup) (TimeIndex ?tg) (Parent ?p))))
-;         =>
-;         (retract ?fct)
-;         (bind ?name (gensym*))
-;         ;(printout t "Contents for " ?q " = " (send ?sched get-Contents) crlf)
-;         (assert (Perform Schedule ?q for ?p))
-;         (make-instance ?name of InstructionGroup (Parent ?p) (TimeIndex ?tg))
-;         (modify-instance ?sched (TimeGenerator (+ 1 ?tg)) (Groups ?groups ?name)))
 
 (defrule CanScheduleInstructionNow
          (declare (salience 343))
          (Stage WavefrontSchedule $?)
          (Substage ScheduleObjectUsage $?)
          (Perform Schedule ?n for ?b)
-         ?sched <- (object (is-a Schedule) (ID ?n) (Parent ?b)
-                           (Contents ?curr $?) (Scheduled $?s))
-         (object (is-a Instruction) (ID ?curr) 
-                 (LocalDependencies $?p))
+         ?sched <- (object (is-a Schedule) (ID ?n) (Contents ?curr $?) 
+                           (Scheduled $?s))
+         (object (is-a Instruction) (ID ?curr) (LocalDependencies $?p))
          (test (subsetp $?p $?s))
          =>
-         ;(printout t "Scheduled " ?curr crlf)
          (slot-delete$ ?sched Contents 1 1)
          (slot-insert$ ?sched Success 1 ?curr))
 
@@ -194,19 +168,15 @@
          (Stage WavefrontSchedule $?)
          (Substage ScheduleObjectUsage $?)
          (Peform Schedule ?n for ?b)
-         ?sched <- (object (is-a Schedule) (ID ?n) 
-                           (Contents ?curr $?) (Scheduled $?s))
-         (object (is-a Instruction) (ID ?curr) 
-                 (LocalDependencies $?p))
+         ?sched <- (object (is-a Schedule) (ID ?n) (Contents ?curr $?) 
+                           (Scheduled $?s))
+         (object (is-a Instruction) (ID ?curr) (LocalDependencies $?p))
          (test (not (subsetp $?p $?s)))
          =>
-         ;(printout t "Stalled " ?curr " Producers = " ?p ", and Scheduled = "
-         ;          ?s " and success = " (send ?sched get-Success) crlf)
          (slot-delete$ ?sched Contents 1 1)
          (slot-insert$ ?sched Failure 1 ?curr))
 
 (defrule EndInstructionScheduleAttempt
-         ;(declare (salience 343))
          (Stage WavefrontSchedule $?)
          (Substage ResetScheduling $?)
          ?fct <- (Perform Schedule ?n for ?)
@@ -216,17 +186,8 @@
          (retract ?fct))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;(defrule ShouldCreateNewInstructionGroup
-;         (declare (salience 360))
-;         (Stage WavefrontSchedule $?)
-;         (Substage ResetScheduling $?)
-;         (object (is-a Schedule) (ID ?n) (Success $?len)
-;                 (Failure $?fail) (TimeGenerator ?tg))
-;         (test (and (> (length$ ?fail) 0) (> (length$ ?len) 0)))
-;         =>
-;         (assert (Create InstructionGroup for ?n)))
 
-(defrule PutSuccessfulInstructionIntoInstructionGroup
+(defrule PutSuccessfulInstructionIntoInstructionStream
          (declare (salience 270))
          (Stage WavefrontSchedule $?)
          (Substage ResetScheduling $?)
@@ -236,7 +197,7 @@
          =>
          (send ?sched .MarkScheduled ?targ 1))
 
-(defrule PutSuccessfulStoreInstructionIntoInstructionGroup
+(defrule PutSuccessfulStoreInstructionIntoInstructionStream
          (declare (salience 271))
          (Stage WavefrontSchedule $?)
          (Substage ResetScheduling $?)
@@ -263,7 +224,7 @@
          (object (is-a Schedule) (ID ?n)
                  (Parent ?p) (Contents) (Success) (Failure))
          =>
-         (assert (Schedule ?p using ?n in llvm)))
+         (assert (Schedule ?p in llvm)))
 
 (defrule ResetTargetScheduleForAnotherGo
          (declare (salience 180))
@@ -287,83 +248,42 @@
          (assert (Substage ScheduleObjectUsage ResetScheduling $?rest)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defrule SetupSchedulingContainer 
-         (declare (salience 100))
-         (Stage WavefrontSchedule $?)
-         (Substage InitLLVMUpdate $?)
-         (Schedule ?p using ?n in llvm)
-         (object (is-a BasicBlock) (ID ?p) (Contents $? ?last))
-         (object (is-a TerminatorInstruction) (ID ?last) (Pointer ?tPtr))
-         (object (is-a Schedule) (Parent ?p) (InstructionStream $?stream))
-         =>
-         (make-instance of Hint (Type SymbolContainer) (Parent ?p) 
-                                (Contents $?stream))
-         (make-instance of Hint (Type Container) (Parent ?p) (Point ?tPtr) 
-                                (Contents (symbol-to-pointer-list ?stream)))
-         (assert (Notify LLVM of changes to ?p)))
-
-
 
 (defrule FinishLLVMEncoding-HasPhi
          (declare (salience -12))
          (Stage WavefrontSchedule $?)
          (Substage LLVMUpdate $?)
-         (Schedule ?p using ?n in llvm)
+         ?f1 <- (Schedule ?p in llvm)
          ?f2 <- (Update style for ?p is ?lastPhi)
-         ?f1 <- (Notify LLVM of changes to ?p)
-         ?hint <- (object (is-a Hint) (ID ?name) (Type Container) (Parent ?p)
-                          (Point ?tPtr) (Contents $?contents))
-         ?hint2 <- (object (is-a Hint) (ID ?n2) (Type SymbolContainer) 
-                           (Parent ?p) (Contents $?symbols))
+         (object (is-a Schedule) (Parent ?p) (InstructionStream $?stream))
          ?bb <- (object (is-a BasicBlock) (ID ?p) 
                         (Contents $?before ?lastPhi $?instructions ?last $?rest))
          (object (is-a TerminatorInstruction) (ID ?last) (Pointer ?tPtr))
          =>
          (modify-instance ?bb 
-                          (Contents $?before ?lastPhi ?symbols ?last $?rest))
-         (llvm-schedule-block ?tPtr ?contents)
-         (retract ?f1 ?f2)
-         (unmake-instance ?hint ?hint2))
+                          (Contents $?before ?lastPhi ?stream ?last $?rest))
+         (llvm-schedule-block ?tPtr (symbol-to-pointer-list ?stream))
+         (retract ?f1 ?f2))
 
 (defrule FinishLLVMEncoding-NoPhi
          (declare (salience -12))
          (Stage WavefrontSchedule $?)
          (Substage LLVMUpdate $?)
-         (Schedule ?p using ?n in llvm)
+         ?f1 <- (Schedule ?p in llvm)
          ?f2 <- (Update style for ?p is)
-         ?f1 <- (Notify LLVM of changes to ?p)
-         ?hint <- (object (is-a Hint) (ID ?name) (Type Container) (Parent ?p)
-                          (Point ?tPtr) (Contents $?contents))
-         ?hint2 <- (object (is-a Hint) (ID ?n2) (Type SymbolContainer) 
-                           (Parent ?p) (Contents $?symbols))
          ?bb <- (object (is-a BasicBlock) (ID ?p))
-         (object (is-a TerminatorInstruction) (ID ?last) (Parent ?p) 
+         (object (is-a Schedule) (Parent ?p) (InstructionStream $?stream))
+         (object (is-a TerminatorInstruction) (Parent ?p) (ID ?last) 
                  (Pointer ?tPtr))
          =>
-         (modify-instance ?bb (Contents ?symbols ?last))
-         (llvm-schedule-block ?tPtr ?contents)
-         (retract ?f1 ?f2)
-         (unmake-instance ?hint ?hint2))
-
-(defrule RetractMergeHints
-         (declare (salience -25))
-         (Stage WavefrontSchedule $?)
-         (Substage LLVMUpdate $?)
-         ?fct <- (Merge ? at ? using ? and ?)
-         =>
-         (retract ?fct))
+         (modify-instance ?bb (Contents ?stream ?last))
+         (llvm-schedule-block ?tPtr (symbol-to-pointer-list ?stream))
+         (retract ?f1 ?f2))
 
 (defrule RetractUpdateStyleHint
          (declare (salience -26))
          (Stage WavefrontSchedule $?)
          (Substage LLVMUpdate $?)
          ?fct <- (Update style for ? is $?)
-         =>
-         (retract ?fct))
-(defrule RetractScheduleHint
-         (declare (salience -100))
-         (Stage WavefrontSchedule $?)
-         (Substage LLVMUpdate $?)
-         ?fct <- (Schedule ? using ? in llvm)
          =>
          (retract ?fct))
