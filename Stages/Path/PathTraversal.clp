@@ -23,7 +23,6 @@
 ;(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;------------------------------------------------------------------------------
-;------------------------------------------------------------------------------
 ; PathTraversal.clp - Contains rules that handle the act of traversing the
 ; region during path construction 
 ; Written by Joshua Scoggins (6/20/2012)
@@ -31,80 +30,53 @@
 (defrule PathConstruction-BasicBlockToBasicBlock
 				 (declare (salience 2))
 				 (Stage Path $?)
-				 ?path <- (object (is-a Path) (Parent ?p) (ID ?id) (Contents $? ?curr) 
+				 ?path <- (object (is-a Path) (Parent ?p) (ID ?id) (Contents $?before ?curr) 
 													(Closed FALSE))
 				 (object (is-a BasicBlock) (ID ?curr) (Parent ?p) 
 								 (Successors $? ?next $?))
 				 (object (is-a BasicBlock) (ID ?next) (Parent ?p))
-				 (object (is-a Region) (Class Region) (ID ?p)) 
+				 (test (eq FALSE (member$ ?next (create$ $?before ?curr))))
 				 =>
 				 (send ?path .IncrementReferenceCount)
 				 (assert (Add ?next to ?id)))
-;------------------------------------------------------------------------------
-(defrule PathConstruction-BasicBlockToExit
-				 "Marks the current path as finished because we've reached an exit to the
-				 current region"
-				 (declare (salience 2))
-				 (Stage Path $?)
-				 ?path <- (object (is-a Path) (Parent ?p) (ID ?id) (Contents $? ?curr) 
-													(Closed FALSE))
-				 (object (is-a BasicBlock) (ID ?curr) (Parent ?p) (Successors $? ?e $?))
-				 (object (is-a Region) (Class Region) (ID ?p) (Exits $? ?e $?))
-				 ;since the current block has an exit for this region we mark it
-				 =>
-				 (send ?path .IncrementReferenceCount)
-				 (assert (Close ?id with ?e)))
-;------------------------------------------------------------------------------
-(defrule PathConstruction-RegionToExit
-				 (declare (salience 2))
-				 (Stage Path $?)
-				 ?path <- (object (is-a Path) (Closed FALSE) (Parent ?p) (ID ?id) 
-													(Contents $? ?c))
-				 (object (is-a Region) (ID ?c) (Parent ?p) (Exits $? ?e $?))
-				 (object (is-a Region) (Class Region) (ID ?p) (Exits $? ?e $?))
-				 ; both the inner and outer regions have the same exit...thus the
-				 ; curent nested region is a terminator for one path
-				 =>
-				 (send ?path .IncrementReferenceCount)
-				 (assert (Close ?id with ?e)))
 ;------------------------------------------------------------------------------
 (defrule PathConstruction-RegionToBasicBlock
 				 (declare (salience 2))
 				 (Stage Path $?)
 				 ?path <- (object (is-a Path) (Closed FALSE) (Parent ?p) (ID ?id)
-													(Contents $? ?c))
-				 (object (is-a Region) (ID ?c) (Parent ?p) (Exits $? ?e $?))
-				 (object (is-a BasicBlock) (ID ?e) (Parent ?p))
-				 (object (is-a Region) (Class Region) (ID ?p))
+													(Contents $?before ?curr))
+				 (object (is-a Region) (ID ?curr) (Parent ?p) (Exits $? ?next $?))
+				 (object (is-a BasicBlock) (ID ?next) (Parent ?p))
+				 (test (eq FALSE (member$ ?next (create$ $?before ?curr))))
 				 =>
 				 (send ?path .IncrementReferenceCount)
-				 (assert (Add ?e to ?id)))
+				 (assert (Add ?next to ?id)))
 ;------------------------------------------------------------------------------
 (defrule PathConstruction-BasicBlockToRegion
 				 (declare (salience 2))
 				 (Stage Path $?)
 				 ?path <- (object (is-a Path) (Closed FALSE) (Parent ?p) (ID ?id) 
-													(Contents $? ?c))
-				 (object (is-a BasicBlock) (ID ?c) (Parent ?p) (Successors $? ?s $?))
-				 (object (is-a Region) (ID ?v) (Parent ?p) (Entrances $? ?s $?))
-				 (object (is-a Region) (Class Region) (ID ?p))
+													(Contents $?before ?curr))
+				 (object (is-a BasicBlock) (ID ?curr) (Parent ?p) (Successors $? ?s $?))
+				 (object (is-a Region) (Entrances $? ?s $?) (ID ?next) (Parent ?p))
+				 (test (eq FALSE (member$ ?next (create$ $?before ?curr))))
 				 =>
 				 (send ?path .IncrementReferenceCount)
-				 (assert (Add ?v to ?id)))
+				 (assert (Add ?next to ?id)))
 ;------------------------------------------------------------------------------
 (defrule PathConstruction-RegionToRegion
 				 (declare (salience 2))
 				 (Stage Path $?)
 				 ?path <- (object (is-a Path) (Closed FALSE) (Parent ?p) (ID ?id) 
-													(Contents $? ?c))
-				 (object (is-a Region) (ID ?c) (Parent ?p) (Exits $? ?e $?))
-				 (object (is-a Region) (ID ?q) (Parent ?p) (Entrances $? ?e $?)) 
-				 (object (is-a Region) (Class Region) (ID ?p)) 
+													(Contents $?before ?curr))
+				 (object (is-a Region) (ID ?curr) (Parent ?p) (Exits $? ?e $?))
+				 (object (is-a Region) (ID ?next) (Parent ?p) (Entrances $? ?e $?)) 
+				 (test (eq FALSE (member$ ?next (create$ $?before ?curr))))
 				 ; even if the entrance is part of a nested region...we really don't care
 				 ; it will still be accurate thanks to the way llvm does things
 				 =>
 				 (send ?path .IncrementReferenceCount)
-				 (assert (Add ?q to ?id)))
+				 (assert (Add ?next to ?id)))
 ;------------------------------------------------------------------------------
 (defrule PathConstruction-RegionNoExit
 				 "We are at a region that doesn't have an exit...Not sure if LLVM 
@@ -114,7 +86,6 @@
 				 ?path <- (object (is-a Path) (Parent ?p) (ID ?i) (Closed FALSE) 
 													(Contents $? ?a))
 				 (object (is-a Region) (ID ?a) (Parent ?p) (Exits))
-				 (object (is-a Region) (ID ?p) (Class Region))
 				 =>
 				 (send ?path .IncrementReferenceCount)
 				 (assert (Close ?i with nil)))
@@ -127,8 +98,85 @@
 				 ?path <- (object (is-a Path) (Parent ?p) (ID ?i) (Closed FALSE) 
 													(Contents $? ?a))
 				 (object (is-a BasicBlock) (ID ?a) (Parent ?p) (Successors))
-				 (object (is-a Region) (ID ?p) (Class Region))
 				 =>
 				 (send ?path .IncrementReferenceCount)
 				 (assert (Close ?i with nil)))
 ;------------------------------------------------------------------------------
+(defrule PathConstruction-BasicBlockToBasicBlock-Cycle
+				 (declare (salience 2))
+				 (Stage Path $?)
+				 ?path <- (object (is-a Path) (Parent ?p) (ID ?id) (Contents $?before ?curr) 
+													(Closed FALSE))
+				 (object (is-a BasicBlock) (ID ?curr) (Parent ?p) 
+								 (Successors $? ?next $?))
+				 (object (is-a BasicBlock) (ID ?next) (Parent ?p))
+				 (test (neq FALSE (member$ ?next (create$ $?before ?curr))))
+				 ;(object (is-a Region) (ID ?p)) 
+				 =>
+				 (send ?path .IncrementReferenceCount)
+				 (assert (Close ?id with ?next)))
+;------------------------------------------------------------------------------
+(defrule PathConstruction-RegionToBasicBlock-Cycle
+				 (declare (salience 2))
+				 (Stage Path $?)
+				 ?path <- (object (is-a Path) (Closed FALSE) (Parent ?p) (ID ?id)
+													(Contents $?before ?curr))
+				 (object (is-a Region) (ID ?curr) (Parent ?p) (Exits $? ?next $?))
+				 (object (is-a BasicBlock) (ID ?next) (Parent ?p))
+				 (test (neq FALSE (member$ ?next (create$ $?before ?curr))))
+				 =>
+				 (send ?path .IncrementReferenceCount)
+				 (assert (Close ?id with ?next)))
+;------------------------------------------------------------------------------
+(defrule PathConstruction-BasicBlockToRegion-Cycle
+				 (declare (salience 2))
+				 (Stage Path $?)
+				 ?path <- (object (is-a Path) (Closed FALSE) (Parent ?p) (ID ?id) 
+													(Contents $?before ?curr))
+				 (object (is-a BasicBlock) (ID ?curr) (Parent ?p) (Successors $? ?s $?))
+				 (object (is-a Region) (ID ?next) (Parent ?p) (Entrances $? ?s $?))
+				 (test (neq FALSE (member$ ?next (create$ $?before ?curr))))
+				 =>
+				 (send ?path .IncrementReferenceCount)
+				 (assert (Close ?id with ?next)))
+;------------------------------------------------------------------------------
+(defrule PathConstruction-RegionToRegion-Cycle
+				 (declare (salience 2))
+				 (Stage Path $?)
+				 ?path <- (object (is-a Path) (Closed FALSE) (Parent ?p) (ID ?id) 
+													(Contents $?before ?curr))
+				 (object (is-a Region) (ID ?curr) (Parent ?p) (Exits $? ?e $?))
+				 (object (is-a Region) (ID ?next) (Parent ?p) (Entrances $? ?e $?)) 
+				 (test (neq FALSE (member$ ?next (create$ $?before ?curr))))
+				 ; even if the entrance is part of a nested region...we really don't care
+				 ; it will still be accurate thanks to the way llvm does things
+				 =>
+				 (send ?path .IncrementReferenceCount)
+				 (assert (Close ?next with ?id)))
+;------------------------------------------------------------------------------
+(defrule PathConstruction-BasicBlockToExit
+				 "Marks the current path as finished because we've reached an exit to the
+				 current region"
+				 (declare (salience 2))
+				 (Stage Path $?)
+				 ?path <- (object (is-a Path) (Parent ?p) (ID ?id) (Contents $? ?curr) 
+													(Closed FALSE))
+				 (object (is-a BasicBlock) (ID ?curr) (Parent ?p) (Successors $? ?e $?))
+				 (object (is-a Region) (ID ?p) (Exits $? ?e $?))
+				 ;since the current block has an exit for this region we mark it
+				 =>
+				 (send ?path .IncrementReferenceCount)
+				 (assert (Close ?id with ?e)))
+;------------------------------------------------------------------------------
+(defrule PathConstruction-RegionToExit
+				 (declare (salience 2))
+				 (Stage Path $?)
+				 ?path <- (object (is-a Path) (Closed FALSE) (Parent ?p) (ID ?id) 
+													(Contents $? ?c))
+				 (object (is-a Region) (ID ?c) (Parent ?p) (Exits $? ?e $?))
+				 (object (is-a Region) (ID ?p) (Exits $? ?e $?))
+				 ; both the inner and outer regions have the same exit...thus the
+				 ; curent nested region is a terminator for one path
+				 =>
+				 (send ?path .IncrementReferenceCount)
+				 (assert (Close ?id with ?e)))

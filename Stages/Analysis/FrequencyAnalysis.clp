@@ -31,7 +31,7 @@
 				 "Creates a frequency counter hint for basic blocks"
 				 (declare (salience 220))
 				 (Stage Analysis $?)
-				 (object (is-a Region) (Class Region) (ID ?p) (CanWavefrontSchedule FALSE))
+				 (object (is-a Region) (ID ?p) (CanWavefrontSchedule FALSE))
 				 =>
 				 (make-instance of FrequencyAnalysis (Parent ?p)))
 ;------------------------------------------------------------------------------
