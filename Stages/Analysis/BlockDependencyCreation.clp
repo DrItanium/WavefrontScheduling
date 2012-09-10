@@ -190,7 +190,6 @@
 				 (retract ?f0)
 				 (assert (Instruction ?b is produced by ?a)))
 
-
 ;------------------------------------------------------------------------------
 (defrule InjectConsumers
 				 "Adds a given consumer to the target instruction"
@@ -245,18 +244,6 @@
 				 (not (exists (object (is-a Region) (Parent ?p))))
 				 =>
 				 (retract ?fct)
-				 (modify-instance ?region (HasCallBarrier TRUE)))
-;------------------------------------------------------------------------------
-(defrule FlagCallBarrierForLoop
-				 "Marks the given region has having a call barrier"
-				 (declare (salience -10))
-				 (Stage Analysis $?)
-				 ?fct <- (Region ?r has a CallBarrier)
-				 ?region <- (object (is-a Loop) (ID ?r) (Parent ?p))
-				 (exists (object (is-a Region) (Parent ?p)))
-				 =>
-				 (retract ?fct)
-				 (assert (Region ?p has a CallBarrier))
 				 (modify-instance ?region (HasCallBarrier TRUE)))
 ;------------------------------------------------------------------------------
 (defrule FlagCallBarrierForLoop-ImbueParent
