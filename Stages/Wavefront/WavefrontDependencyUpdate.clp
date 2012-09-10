@@ -146,7 +146,7 @@
 				 (assert (Instruction ?following has a CallDependency)
 								 (Instruction ?following consumes ?name)
 								 (Instruction ?name produces ?following)))
-(defrule MarkNonLocalDependencies
+(defrule MarkNonLocalDependencies-Wavefront
 				 (Stage WavefrontSchedule $?)
 				 (Substage DependencyAnalysis $?)
 				 (Evaluate ?p for dependencies starting at ?si)
