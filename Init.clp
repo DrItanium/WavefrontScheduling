@@ -29,11 +29,12 @@
  (create$ "Library/Loader.clp" 
   "Types/TypeLoader.clp"
   "Stages/StageRegistration.clp"
-  "Stages/Fixup/StageGroupLoader.clp"
-  "Stages/Analysis/StageGroupLoader.clp"
-  "Stages/Path/StageGroupLoader.clp"
-  "Stages/Wavefront/StageGroupLoader.clp"
-  "Stages/Final/StageGroupLoader.clp"))
+  "Stages/Fixup/StageGroupLoader.clp"))
+;(watch rules)
+ ; "Stages/Analysis/StageGroupLoader.clp"
+ ; "Stages/Path/StageGroupLoader.clp"
+ ; "Stages/Wavefront/StageGroupLoader.clp"
+ ; "Stages/Final/StageGroupLoader.clp"))
 
 ;If you want to do things that occur at start up then make
 ; the changes here :). Uncomment the line below to enable debug mode :D
@@ -56,6 +57,7 @@
  (Memory)
  =>
  (printout t "Initial Memory Consumption " (/ (mem-used) 131072) " MB" crlf))
+
 (defrule GetRunStatistics
  (Debug)
  (RunStatistics)
