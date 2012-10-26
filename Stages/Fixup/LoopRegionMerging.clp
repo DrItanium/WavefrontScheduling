@@ -37,209 +37,139 @@
 ; My current idea is to have loops and regions make claims based off of a list
 ; defined by LLVM during knowledge construction. 
 ;------------------------------------------------------------------------------
-(defrule Init-GetBasicBlocks
- "Acquires all of the basic blocks associated with the current function"
- (Stage BuildFunctionContainer $?)
- (not (exists (object (is-a Hint) (Type FunctionContainer))))
+(defrule ConstructFlatListForRegion
+ "Creates a flat representation of the contents of the given region"
+ (Stage BuildFlatList $?)
+ (object (is-a Region) (ID ?id) (Contents $?z))
+ (not (exists (object (is-a Hint) (Type FlatList) (Parent ?id))))
  =>
- (make-instance of Hint (Type FunctionContainer)))
+ (make-instance of Hint (Type FlatList) (Parent ?id)) 
+ (assert (Populate FlatList of ?id with $?z)))
 
-(defrule GetBasicBlock
- (Stage BuildFunctionContainer $?)
- ?func <- (object (is-a Hint) (Type FunctionContainer))
- (object (is-a BasicBlock) (ID ?id))
+(defrule PopulateFlatList-BasicBlock
+ (Stage BuildFlatList $?)
+ ?f <- (Populate FlatList of ?id with ?first $?rest)
+ ?o <- (object (is-a Hint) (Type FlatList) (Parent ?id))
+ (object (is-a BasicBlock) (ID ?first))
  =>
- (slot-insert$ ?func Contents 1 ?id))
-
-(defrule BlockMakesClaimsOnSection
- (Stage ClaimOwnership $?)
- (object (is-a BasicBlock) (ID ?a) (Contents $?b))
- (object (is-a Hint) (Type FunctionContainer) (Contents $?c))
- (test (subsetp ?b ?c))
- =>
- (assert (Claim: ?a claims ?b)))
-
-(defrule RegionMakesClaimsOnSection
- (Stage ClaimOwnership $?)
- (object (is-a Region&~Loop) (ID ?a) (Contents $?b))
- (object (is-a Hint) (Type FunctionContainer) (Contents $?c))
- (test (subsetp ?b ?c))
- =>
- (assert (Claim: ?a claims ?b)))
-
-(defrule LoopMakeClaimOnSection
- (Stage ClaimOwnership $?)
- (object (is-a Loop) (ID ?a) (Contents $?b))
- (object (is-a Hint) (Type FunctionContainer) (Contents $?c))
- (test (subsetp ?b ?c))
- =>
- (assert (Claim: ?a claims ?b)))
-
- 
-(defrule PrintoutFunctionContainerContents 
- (Stage FixupRename $?)
- ?func <- (object (is-a Hint) (Type FunctionContainer))
- =>
- (send ?func print))
-
-(defrule PrintoutDepthOfObjects
- (Stage FixupRename $?)
- (object (ID ?id) (Class ?cl) (Depth ?d))
- =>
- (printout t "Class: " ?cl " named " ?id " with depth " ?d crlf))
-
-(defrule PrintoutClaimsOfOwnership
- (Stage FixupRename $?)
- ?f <- (Claim: ?name claims $?claim)
- (object (ID ?name) (Class ?class))
- =>
+ (slot-insert$ ?o Contents 1 ?first)
  (retract ?f)
- (printout t ?class " " ?name " claims ownership of " ?claim crlf))
+ (assert (Populate FlatList of ?id with $?rest)))
 
-;(defrule FoundContestedOwnershipBetweenLoopAndRegion
-; (Stage Fixup $?)
-; ?region <- (object (is-a Region&~Loop) (Contents $?r) (ID ?n0) (Parent ?p))
-; ?loop <- (object (is-a Loop) (Contents $?l) (ID ?n1))
-; (test (and (neq ?region ?loop) (equal$ ?r ?l)))
-; =>
-; (assert (Replace ?n0 with ?n1 in ?p)
-;         (Delete region ?n0)))
- ;(printout t "Region " ?n0 " and Loop " ?n1 " own contested blocks " ?l crlf))
-;(defrule ReplaceRegionWithLoop
-;				 "Replaces a region with a loop if it turns out that the region is a container
-;				 over a given loop (it's the only element in the region). The loop takes the
-;				 place of the region in the grand scheme of things"
-;				 (declare (salience -10))
-;				 (Stage Fixup $?)
-;				 ?r <- (object (is-a Region) (Class Region) (ID ?name) (Parent ?p) (Contents ?loop))
-;				 ?l <- (object (is-a Loop) (ID ?loop) (Parent ?lp)) ;we don't care what the parent is
-;				 ?parent <- (object (is-a Region) (ID ?p) (Contents $?start ?name $?rest))
-;				 =>
-;				 ;(printout t "Replacing " ?name " with " ?loop " because " ?name 
-;				 ;					 " only contains " ?loop crlf)
-;				 ; (printout t "Parent of " ?loop " was " ?lp " originally" crlf)
-;				 (modify-instance ?l (Parent ?p))
-;				 (modify-instance ?parent (Contents $?start ?loop $?rest))
-;				 (unmake-instance ?r))
-;;------------------------------------------------------------------------------
-;(defrule ConvertControlModification
-;				 "Breaks apart the controlmodification template into two facts to perform
-;				 different actions"
-;				 (Stage Fixup $?)
-;				 ?fct <- (ControlModification (ModificationType Relinquish) (From ?l) (To ?r)
-;																			(Subject $?elements))
-;				 =>
-;				 (retract ?fct)
-;				 (assert (Put into ?r elements $?elements)))
-;
-;(defrule InjectElementsIntoNewBlock
-;				 (Stage Fixup $?)
-;				 ?fct <- (Put into ?r elements ?element $?elements)
-;				 ?region <- (object (is-a Region) (ID ?r))
-;				 ?block <- (object (is-a BasicBlock) (ID ?element))
-;				 =>
-;				 (assert (Put into ?r elements $?elements))
-;				 (modify-instance ?block (Parent ?r))
-;				 (slot-insert$ ?region Contents 1 ?element)
-;				 (retract ?fct))
-;
-;(defrule InjectElementsIntoNewBlock-Retract
-;				 ?fct <- (Put into ? elements)
-;				 =>
-;				 (retract ?fct))
-;;------------------------------------------------------------------------------
-;(defrule StripoutUncontrolledElements
-;				 (declare (salience -2))
-;				 (Stage FixupUpdate $?)
-;				 (object (is-a Region) (ID ?r) (Contents $? ?e $?))
-;				 (object (is-a TaggedObject) (ID ?e) (Parent ?z&~?r))
-;				 =>
-;				 ;(printout t "element " ?e " in " ?r " is owned by " ?z "!" crlf)
-;				 (assert (Parent of ?e is now ?r)
-;								 (Rename: In ?z put ?r in place of ?e)))
-;(defrule RetractImpossibleReplaceStatements
-;				 (declare (salience 1))
-;				 (Stage FixupRename $?)
-;				 ?f0 <- (Rename: In ?r put ?t in place of $?)
-;				 (not (exists (object (ID ?r))))
-;				 =>
-;				 (retract ?f0))
-;(defrule MergePutStatements
-;				 (declare (salience 1))
-;				 (Stage FixupRename $?)
-;				 ?f0 <- (Rename: In ?r put ?t in place of $?e0)
-;				 ?f1 <- (Rename: In ?r put ?t in place of $?e1)
-;				 (test (neq ?f0 ?f1))
-;				 =>
-;				 (retract ?f0 ?f1)
-;				 (assert (Rename: In ?r put ?t in place of $?e0 $?e1)))
-;
-;
-;(defrule ReplaceSubsets
-;				 (Stage FixupUpdate $?)
-;				 ?region <- (object (is-a Region) (ID ?r) (Contents $?a))
-;				 ?loop <- (object (is-a Loop) (ID ?l&~?r) (Contents $?b))
-;				 (test (subsetp ?a ?b))
-;				 =>
-;				 ;(printout t "Replacing " ?a " with " ?r crlf)
-;				 (assert (In ?l put ?r in place of $?a)))
-;
-;(defrule MergeElementsFromLoop
-;				 (Stage FixupUpdate $?)
-;				 ?fct <- (In ?l put ?r in place of ?first $?rest)
-;				 ?loop <- (object (is-a Loop) (ID ?l) (Contents $?a ?first $?b))
-;				 =>
-;				 (retract ?fct)
-;				 (assert (In ?l put ?r in place of $?rest))
-;				 (modify-instance ?loop (Contents $?a $?b)))
-;
-;(defrule MergeRegionInPlaceOfElementsToLoop
-;				 (Stage FixupUpdate $?)
-;				 ?fct <- (In ?l put ?r in place of)
-;				 ?loop <- (object (is-a Loop) (ID ?l))
-;				 (test (eq FALSE (member$ ?r (send ?loop get-Contents))))
-;				 =>
-;				 (retract ?fct)
-;				 (slot-insert$ ?loop Contents 1 ?r))
-;
-;(defrule MergeRegionInPlaceOfElementsToLoop-NoDuplicate
-;				 (Stage FixupUpdate $?)
-;				 ?fct <- (In ?l put ?r in place of)
-;				 ?loop <- (object (is-a Loop) (ID ?l))
-;				 (test (neq FALSE (member$ ?r (send ?loop get-Contents))))
-;				 =>
-;				 (retract ?fct))
-;
-;(defrule RevokeOwnershipOfIllegalElements
-;				 (Stage FixupRename $?)
-;				 ?fct <- (Rename: In ?r put ?t in place of ?first $?rest)
-;				 ?region <- (object (is-a Region) (ID ?r) (Contents $?before ?first $?after))
-;				 =>
-;				 (retract ?fct)
-;				 (assert (Rename: In ?r put ?t in place of $?rest))
-;				 (modify-instance ?region (Contents $?before $?after)))
-;
-;(defrule ReplaceOwnershipOfIllegalElements-Final-InsertAndRetract
-;				 (Stage FixupRename $?)
-;				 ?fct <- (Rename: In ?r put ?t in place of)
-;				 ?region <- (object (is-a Region) (ID ?r))
-;				 (test (eq FALSE (member$ ?t (send ?region get-Contents))))
-;				 =>
-;				 (retract ?fct)
-;				 (slot-insert$ ?region Contents 1 ?t))
-;
-;(defrule ReplaceOwnershipOfIllegalElements-Final-JustRetract
-;				 (Stage FixupRename $?)
-;				 ?fct <- (Rename: In ?r put ?t in place of)
-;				 ?region <- (object (is-a Region) (ID ?r))
-;				 (test (neq FALSE (member$ ?t (send ?region get-Contents))))
-;				 =>
-;				 (retract ?fct))
-;
-;(defrule ReplaceParentOfGivenItem
-;				 (Stage FixupRename $?)
-;				 ?fct <- (Parent of ?t is now ?r)
-;				 ?o0 <- (object (is-a TaggedObject) (ID ?t))
-;				 =>
-;				 (retract ?fct)
-;				 (modify-instance ?o0 (Parent ?r)))
+(defrule PopulateFlatList-Region
+ (Stage BuildFlatList $?)
+ ?f <- (Populate FlatList of ?id with ?first $?rest)
+ ?o <- (object (is-a Hint) (Type FlatList) (Parent ?id))
+ (object (is-a Region) (ID ?first))
+ (object (is-a Hint) (Type FlatList) (Parent ?first) (ID ?name))
+ =>
+ ;Add the reference to FlatList for the time being until we have
+ ;finished constructing an entire flat list
+ (slot-insert$ ?o Contents 1 ?name)
+ (retract ?f)
+ (assert (Populate FlatList of ?id with $?rest)))
+
+(defrule RetractFlatListConstruction
+ (Stage BuildFlatList $?)
+ ?f <- (Populate FlatList of ? with)
+ =>
+ (retract ?f))
+
+(defrule ExpandFlatListEntry
+ "Takes a flat list and expands one of the elements of the contents if it turns
+ out that element is another flat list"
+ (Stage ExpandFlatList $?)
+ ?id <- (object (is-a Hint) (Type FlatList) (Contents $?a ?b $?c))
+ (object (is-a Hint) (Type FlatList) (ID ?b) (Contents $?j))
+ =>
+ (modify-instance ?id (Contents $?a $?j $?c)))
+
+(defrule ClaimOwnership
+ "Asserts that a region owns another through a subset check. The first flat
+ list is checked to see if it is a _proper_ subset of the second"
+ (Stage ClaimOwnership $?)
+ ?f0 <- (object (is-a Hint) (Type FlatList) (ID ?i0) (Contents $?c0) 
+                (Parent ?p0))
+ ?f1 <- (object (is-a Hint) (Type FlatList) (ID ?i1&~?i0) (Contents $?c1)
+                (Parent ?p1))
+ (test (and (subsetp ?c0 ?c1) (> (length$ ?c1) (length$ ?c0))))
+ =>
+ (assert (claim ?p1 owns ?p0)))
+
+(defrule ClaimEquivalence
+ "Asserts that two regions are equivalent if one flat list contains the same
+ elements as a second one."
+ (Stage ClaimOwnership $?)
+ ?f0 <- (object (is-a Hint) (Type FlatList) (ID ?i0) (Contents $?c0)
+                (Parent ?p0))
+ ?f1 <- (object (is-a Hint) (Type FlatList) (ID ?i1&~?i0) (Contents $?c1)
+                (Parent ?p1))
+ (test (and (subsetp ?c0 ?c1) (= (length$ ?c1) (length$ ?c0))))
+ =>
+ (assert (claim ?p1 equivalent ?p0)))
+
+
+(defrule MergeClaimsOfEquivalence
+ "It is possible for two facts of equivalence to actually be the same fact"
+ (declare (salience -1))
+ (Stage ClaimOwnership $?)
+ ?f0 <- (claim ?a equivalent ?b)
+ ?f1 <- (claim ?b equivalent ?a)
+ =>
+ (retract ?f0 ?f1)
+ (assert (claim ?a equivalent ?b)))
+
+(defrule EliminateEquivalences-LoopFirst
+ "If we find an equivalence then it means that a loop and a region contain the
+ same elements. Therefore the loop persists and the region dies. The loop is
+ the first entry."
+ (declare (salience 1))
+ (Stage Arbitrate $?)
+ ?f0 <- (claim ?a equivalent ?b)
+ (object (is-a Loop) (ID ?a))
+ (object (is-a Region&~Loop) (ID ?b))
+ =>
+ (retract ?f0)
+ (assert (delete region ?b)
+         (replace ?b with ?a)))
+
+(defrule EliminateEquivalences-LoopSecond
+ "If we find an equivalence then it means that a loop and a region contain the
+ same elements. Therefore the loop persists and the region dies. The loop is
+ the second entry."
+ (declare (salience 1))
+ (Stage Arbitrate $?)
+ ?f0 <- (claim ?b equivalent ?a)
+ (object (is-a Loop) (ID ?a))
+ (object (is-a Region&~Loop) (ID ?b))
+ =>
+ (retract ?f0)
+ (assert (delete region ?b)
+         (replace ?b with ?a)))
+
+(defrule RetractSuperownership
+ "Removes claims of ownership that are retained by a child"
+ (Stage Arbitrate $?)
+ ?f0 <- (claim ?a owns ?b)
+ ?f1 <- (claim ?c owns ?b)
+ ?f2 <- (claim ?a owns ?c)
+ =>
+ (retract ?f0 ?f1 ?f2)
+ ;(printout t 
+ ; "==============================================================" crlf 
+ ; ?a " owns " ?b " , " ?c " owns " ?b " , and " ?a " owns " ?c crlf 
+ ; "Therefore, " ?a " owns " ?b " indirectly" crlf)
+ (assert (claim ?a owns ?c)
+         (claim ?c owns ?b)))
+
+(defrule PrintoutFacts
+ (Stage Fixup $?)
+ =>
+ (facts))
+(defrule PrintoutResults
+ (Silence)
+ (Stage Fixup $?)
+ ?id <- (object (is-a Hint) (Type FlatList))
+ =>
+ (printout t "==================" crlf)
+ (send ?id print))

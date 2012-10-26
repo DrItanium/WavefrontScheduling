@@ -31,7 +31,8 @@
  (initial-fact)
  =>
  (assert (Stage 
-          BuildFunctionContainer
+          BuildFlatList
+          ExpandFlatList
           ClaimOwnership
           Arbitrate
           ResolveClaims
