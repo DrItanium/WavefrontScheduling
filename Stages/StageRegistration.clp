@@ -31,6 +31,10 @@
  (initial-fact)
  =>
  (assert (Stage 
+          BuildFunctionContainer
+          ClaimOwnership
+          Arbitrate
+          ResolveClaims
           Fixup 
 					FixupUpdate
 					FixupRename

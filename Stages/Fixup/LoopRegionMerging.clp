@@ -39,23 +39,62 @@
 ;------------------------------------------------------------------------------
 (defrule Init-GetBasicBlocks
  "Acquires all of the basic blocks associated with the current function"
- (Stage Fixup $?)
+ (Stage BuildFunctionContainer $?)
  (not (exists (object (is-a Hint) (Type FunctionContainer))))
  =>
  (make-instance of Hint (Type FunctionContainer)))
 
 (defrule GetBasicBlock
- (Stage Fixup $?)
+ (Stage BuildFunctionContainer $?)
  ?func <- (object (is-a Hint) (Type FunctionContainer))
  (object (is-a BasicBlock) (ID ?id))
  =>
  (slot-insert$ ?func Contents 1 ?id))
 
+(defrule BlockMakesClaimsOnSection
+ (Stage ClaimOwnership $?)
+ (object (is-a BasicBlock) (ID ?a) (Contents $?b))
+ (object (is-a Hint) (Type FunctionContainer) (Contents $?c))
+ (test (subsetp ?b ?c))
+ =>
+ (assert (Claim: ?a claims ?b)))
+
+(defrule RegionMakesClaimsOnSection
+ (Stage ClaimOwnership $?)
+ (object (is-a Region&~Loop) (ID ?a) (Contents $?b))
+ (object (is-a Hint) (Type FunctionContainer) (Contents $?c))
+ (test (subsetp ?b ?c))
+ =>
+ (assert (Claim: ?a claims ?b)))
+
+(defrule LoopMakeClaimOnSection
+ (Stage ClaimOwnership $?)
+ (object (is-a Loop) (ID ?a) (Contents $?b))
+ (object (is-a Hint) (Type FunctionContainer) (Contents $?c))
+ (test (subsetp ?b ?c))
+ =>
+ (assert (Claim: ?a claims ?b)))
+
+ 
 (defrule PrintoutFunctionContainerContents 
- (Stage FixupUpdate $?)
+ (Stage FixupRename $?)
  ?func <- (object (is-a Hint) (Type FunctionContainer))
  =>
  (send ?func print))
+
+(defrule PrintoutDepthOfObjects
+ (Stage FixupRename $?)
+ (object (ID ?id) (Class ?cl) (Depth ?d))
+ =>
+ (printout t "Class: " ?cl " named " ?id " with depth " ?d crlf))
+
+(defrule PrintoutClaimsOfOwnership
+ (Stage FixupRename $?)
+ ?f <- (Claim: ?name claims $?claim)
+ (object (ID ?name) (Class ?class))
+ =>
+ (retract ?f)
+ (printout t ?class " " ?name " claims ownership of " ?claim crlf))
 
 ;(defrule FoundContestedOwnershipBetweenLoopAndRegion
 ; (Stage Fixup $?)
