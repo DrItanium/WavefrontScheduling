@@ -166,6 +166,12 @@
  (Stage Fixup $?)
  =>
  (facts))
+
+
+;TODO: Add rules to handle cases where final ownership has been determined to
+;      be such that nothing needs to change (r0 owns r1 and r0 contains r1 or
+;      l0 owns l1 and l0 contains l1)
+
 (defrule PrintoutResults
  (Silence)
  (Stage Fixup $?)
@@ -173,3 +179,10 @@
  =>
  (printout t "==================" crlf)
  (send ?id print))
+
+(defrule DeallocateFlatLists
+ (Stage FixupRename $?)
+ ?fl <- (object (is-a Hint) (Type FlatList))
+ =>
+ (unmake-instance ?fl))
+
