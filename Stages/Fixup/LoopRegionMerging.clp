@@ -147,25 +147,59 @@
  (assert (delete region ?b)
          (replace ?b with ?a)))
 
-(defrule RetractSuperownership
- "Removes claims of ownership that are retained by a child"
- (Stage Arbitrate $?)
- ?f0 <- (claim ?a owns ?b)
- ?f1 <- (claim ?c owns ?b)
- ?f2 <- (claim ?a owns ?c)
- =>
- (retract ?f0 ?f1 ?f2)
- ;(printout t 
- ; "==============================================================" crlf 
- ; ?a " owns " ?b " , " ?c " owns " ?b " , and " ?a " owns " ?c crlf 
- ; "Therefore, " ?a " owns " ?b " indirectly" crlf)
- (assert (claim ?a owns ?c)
-         (claim ?c owns ?b)))
+; Now that we have asserted delete and replacement claims it's necessary to
+; carry those claims out. First, we need to do the replacement actions
 
-(defrule PrintoutFacts
- (Stage Fixup $?)
+
+; We need to apply these changes to the flat lists associated with these
+; objects to ensure that we do the proper replacement thing. 
+; What we do is we use those replacement facts to retract the ownership claims
+;
+; Then we go through and perform partial replacement on the flat lists 
+
+(defrule RemoveStaleClaims-DeletionTargetClaimsAnother
+ "We target claims of ownership that deal with a given region that has to be
+ replaced by another due to equivalence"
+ (declare (salience 1))
+ (Stage ResolveClaims $?)
+ ?f0 <- (replace ?old with ?new)
+ ?f1 <- (claim ?old owns ?other)
  =>
- (facts))
+ (retract ?f0 ?f1)
+ (assert (claim ?new owns ?other)
+         (replace ?old with ?new)))
+
+(defrule RemoveStaleClaims-AnotherClaimsDeletionTarget
+ (declare (salience 1))
+ (Stage ResolveClaims $?)
+ ?f0 <- (replace ?old with ?new)
+ ?f1 <- (claim ?other owns ?old)
+ =>
+ (retract ?f0 ?f1)
+ (assert (claim ?other owns ?new)
+         (replace ?old with ?new)))
+
+(defrule RemoveStaleClaims-NoMoreConvergence
+ "Retract replacement facts because there are no more claims to worry about"
+ (Stage ResolveClaims $?)
+ ?f0 <- (replace ?old with ?new)
+ =>
+ (retract ?f0))
+
+(defrule DeleteTargetRegion
+ "Deletes the target region slated for deletion"
+ (Stage ResolveClaims $?)
+ ?f0 <- (delete region ?r0)
+ ?region <- (object (is-a Region) (ID ?r0))
+ =>
+ (retract ?f0)
+ (unmake-instance ?region))
+
+;Now we have a set of ownership clauses 
+;(defrule PrintoutFacts
+; (Stage Fixup $?)
+; =>
+; (facts))
 
 
 ;TODO: Add rules to handle cases where final ownership has been determined to
@@ -185,4 +219,3 @@
  ?fl <- (object (is-a Hint) (Type FlatList))
  =>
  (unmake-instance ?fl))
-

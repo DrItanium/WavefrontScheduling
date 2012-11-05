@@ -24,3 +24,4 @@
 ;SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (load* "Stages/Fixup/LoopRegionMerging.clp")
 (load* "Stages/Fixup/ProducersPropagation.clp")
+(load* "Stages/Fixup/PathUpdate.clp")

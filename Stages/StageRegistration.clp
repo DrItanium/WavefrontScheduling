@@ -36,6 +36,10 @@
           ClaimOwnership
           Arbitrate
           ResolveClaims
+          DeterminantConstruction
+          DeterminantPopulation
+          DeterminantResolution
+          DeterminantIndirectResolution
           Fixup 
 					FixupUpdate
 					FixupRename
