@@ -43,6 +43,7 @@
           Fixup 
 					FixupUpdate
 					FixupRename
+          CleanUp-Merger
           Analysis 
           ExtendedMemoryAnalysis
           Path
