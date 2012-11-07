@@ -215,7 +215,7 @@
  (send ?id print))
 
 (defrule DeallocateFlatLists
- (Stage FixupRename $?)
+ (Stage CleanUp-Merger $?)
  ?fl <- (object (is-a Hint) (Type FlatList))
  =>
  (unmake-instance ?fl))
