@@ -45,7 +45,19 @@
  (slot-insert$ ?t0 IndirectClaims 1 ?a)
  (modify-instance ?t0 (Claims $?z $?x))
  (modify-instance ?t1 (PotentialChildren $?z0 $?x0)))
-            
+  
+(defrule DeleteNonExistentReferences
+ (Stage Fixup $?)
+ ?region <- (object (is-a Region) (Contents $?a ?b $?c))
+ (not (exists (object (ID ?b))))
+ =>
+ (modify-instance ?region (Contents $?a $?c)))
+
+(defrule CleanupOwnershipDeterminants
+ (Stage CleanUp-Merger $?)
+ ?obj <- (object (is-a OwnershipDeterminant))
+ =>
+ (unmake-instance ?obj))
 
 (defrule FAILURE-NoRemainingClaims
  (Stage Fixup $?)
