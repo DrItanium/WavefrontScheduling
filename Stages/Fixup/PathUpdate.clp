@@ -53,11 +53,38 @@
  =>
  (modify-instance ?region (Contents $?a $?c)))
 
+(defrule UpdateOwnerOfTargetRegion
+ (Stage FixupUpdate $?)
+ (object (is-a OwnershipDeterminant) (Parent ?p) 
+  (Claims ?a))
+ ?obj <- (object (is-a Region) (ID ?p))
+ =>
+ (modify-instance ?obj (Parent ?a)))
+
+(defrule AddNewChildToTargetRegion
+ (Stage FixupUpdate $?)
+ (object (is-a OwnershipDeterminant) (Parent ?p)
+  (PotentialChildren $? ?a $?))
+ ?region <- (object (is-a Region) (ID ?p) (Contents $?c))
+ (test (eq FALSE (member$ ?a ?c)))
+ =>
+ (slot-insert$ ?region Contents 1 ?a))
+
 (defrule CleanupOwnershipDeterminants
  (Stage CleanUp-Merger $?)
  ?obj <- (object (is-a OwnershipDeterminant))
  =>
  (unmake-instance ?obj))
+
+(defrule FAILURE-TooManyClaimsOfOwnership
+ (Stage Fixup $?)
+ (object (is-a OwnershipDeterminant) (Parent ?a) 
+         (Claims $?z&:(> (length$ ?z) 1))
+         (ID ?name))
+ =>
+ (printout t "ERROR: " ?name " has more than one claim of ownership on it!"
+  crlf "The claims are " ?z crlf)
+ (exit))
 
 (defrule FAILURE-NoRemainingClaims
  (Stage Fixup $?)
@@ -67,4 +94,5 @@
  =>
  (printout t "ERROR: " ?a " has no remaining claims!" crlf 
              ?a " has " $?pc " as it's potential children." crlf
-             ?a " has " $?ic " as it's indirect claims." crlf))
+             ?a " has " $?ic " as it's indirect claims." crlf)
+ (exit))
