@@ -93,6 +93,14 @@
  =>
  (assert (claim ?p1 owns ?p0)))
 
+(defrule ClaimOwnershipOfBlocks
+ "This rule is used to assert ownership claims on basic blocks"
+ (Stage ClaimOwnership $?)
+ ?f0 <- (object (is-a Hint) (Type FlatList) (ID ?i0) (Contents $? ?b $?))
+ (object (is-a BasicBlock) (ID ?b))
+ =>
+ (assert (claim ?i0 owns ?b)))
+
 (defrule ClaimEquivalence
  "Asserts that two regions are equivalent if one flat list contains the same
  elements as a second one."
