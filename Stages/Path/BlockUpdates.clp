@@ -28,6 +28,20 @@
 ; of
 ; Written by Joshua Scoggins (6/7/2012)
 ;------------------------------------------------------------------------------
+(defrule FAIL-UNFINISHED-PATHS 
+				 (Stage PathUpdate $?)
+				 (test (> (length$ 
+									 (find-all-instances ((?path Path))
+										(neq TRUE ?path:Closed))) 0))
+				 =>
+				 (printout t "ERROR: Not all paths were closed!" crlf)
+				 (bind ?instances (find-all-instances ((?path Path))
+										(neq TRUE ?path:Closed))) 
+				 (foreach ?inst ?instances
+					(send ?inst print))
+				 (facts)
+				 (exit))
+
 (defrule AddPathToDiplomat
  "Adds the given path name to the target diplomat"
  (declare (salience 1))

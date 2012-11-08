@@ -117,19 +117,6 @@
 														 AdvanceEnd
 														 Update))))
 
-(defrule FAIL-UNFINISHED-PATHS 
-				 (Stage WavefrontFinal $?)
-				 (test (> (length$ 
-									 (find-all-instances ((?path Path))
-										(neq TRUE ?path:Closed))) 0))
-				 =>
-				 (printout t "ERROR: Not all paths were closed!" crlf)
-				 (bind ?instances (find-all-instances ((?path Path))
-										(neq TRUE ?path:Closed))) 
-				 (foreach ?inst ?instances
-					(send ?inst print))
-				 (facts)
-				 (exit))
 				 
 (defrule RetractUnlinkedInstructions
 				 (Stage WavefrontFinal $?)
