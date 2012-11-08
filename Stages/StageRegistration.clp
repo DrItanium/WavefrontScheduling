@@ -26,9 +26,10 @@
 ; Defines the series that the expert system will execute through on invocation
 ; It works through a fact definition structure
 
-(defrule first-rule
+(defrule first-rule-has-loops
  (declare (salience 10000))
  (initial-fact)
+ (exists (object (is-a Loop)))
  =>
  (assert (Stage 
           BuildFlatList
@@ -44,6 +45,23 @@
 					FixupUpdate
 					FixupRename
           CleanUp-Merger
+          ModificationPropagation
+          Analysis 
+          ExtendedMemoryAnalysis
+          Path
+			 PathUpdate
+          WavefrontInit
+          WavefrontSchedule
+			 WavefrontFinal
+          Final)))
+
+(defrule first-rule-no-loops 
+ (declare (salience 10000))
+ (initial-fact)
+ (not (exists (object (is-a Loop))))
+ =>
+ (assert (Stage 
+          ModificationPropagation
           Analysis 
           ExtendedMemoryAnalysis
           Path
