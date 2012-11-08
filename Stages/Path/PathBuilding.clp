@@ -23,7 +23,6 @@
 ;(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;------------------------------------------------------------------------------
-;------------------------------------------------------------------------------
 ; PathBuilding.clp - Contains rules that build up the paths through the given
 ; region 
 ; Written by Joshua Scoggins (6/20/2012)

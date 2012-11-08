@@ -65,10 +65,10 @@
           Analysis 
           ExtendedMemoryAnalysis
           Path
-			 PathUpdate
+			    PathUpdate
           WavefrontInit
           WavefrontSchedule
-			 WavefrontFinal
+			    WavefrontFinal
           Final)))
 
 

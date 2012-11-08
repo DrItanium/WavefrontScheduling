@@ -23,7 +23,6 @@
 ;(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;------------------------------------------------------------------------------
-;------------------------------------------------------------------------------
 ; PathConstruction.clp - Contains rules devoted to starting the construction of
 ; a given path through a given region.
 ; Written by Joshua Scoggins (6/3/2012)
@@ -31,7 +30,7 @@
 (defrule StartPathConstruction-NestedEntrance
 				 (declare (salience 3))
 				 (Stage Path $?)
-				 ?r0 <- (object (is-a Region) (CanWavefrontSchedule TRUE) (Class Region)
+				 ?r0 <- (object (is-a Region) (CanWavefrontSchedule TRUE) 
 												(Entrances $? ?a $?) (ID ?n) (Contents $? ?z $?))
 				 (object (is-a Region) (ID ?z) (Parent ?n) (Entrances $? ?a $?))
 				 (object (is-a BasicBlock) (ID ?a) (Parent ~?n))
@@ -41,7 +40,7 @@
 (defrule StartPathConstruction-BasicBlock
 				 (declare (salience 3))
 				 (Stage Path $?)
-				 ?r0 <- (object (is-a Region) (CanWavefrontSchedule TRUE) (Class Region) 
+				 ?r0 <- (object (is-a Region) (CanWavefrontSchedule TRUE) 
 												(Entrances $? ?a $?) (ID ?n))
 				 (object (is-a BasicBlock) (ID ?a) (Parent ?n))
 				 =>

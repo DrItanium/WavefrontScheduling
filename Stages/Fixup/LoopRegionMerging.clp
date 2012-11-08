@@ -34,9 +34,6 @@
 ; experiment and I realized that it will be easier this way to ensure proper
 ; merging and (by proxy) ordering. 
 ;------------------------------------------------------------------------------
-; My current idea is to have loops and regions make claims based off of a list
-; defined by LLVM during knowledge construction. 
-;------------------------------------------------------------------------------
 (defrule ConstructFlatListForRegion
  "Creates a flat representation of the contents of the given region"
  (Stage BuildFlatList $?)

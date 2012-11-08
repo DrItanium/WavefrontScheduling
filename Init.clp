@@ -35,6 +35,7 @@
   "Stages/Wavefront/StageGroupLoader.clp"
   "Stages/Final/StageGroupLoader.clp"))
 
+(watch rules)
 ;If you want to do things that occur at start up then make
 ; the changes here :). Uncomment the line below to enable debug mode :D
 
