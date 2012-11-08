@@ -288,9 +288,9 @@
          ;  (printout t "Added " ?reg " to " ?e " from ReloadCPV " crlf)
            (slot-insert$ ?agObj InstructionList 1 ?reg))
          (foreach ?nld ?nlds
-                  (if (eq FALSE (member$ ?nld (send ?agObj get-InstructionList))) then
+                  (if (eq FALSE (member$ ?nld (send ?agObj get-ScheduledInstructions))) then
                     ;(printout t "Added non-local dependency " ?nld " to " ?e " from ReloadCPV" crlf)
-                    (slot-insert$ ?agObj InstructionList 1 ?nld)))
+                    (slot-insert$ ?agObj ScheduledInstructions 1 ?nld)))
          (slot-insert$ ?agObj CompensationPathVectors 1 ?cpvID))
 
 (defrule CPVIsImpossible
@@ -307,9 +307,9 @@
          =>
          ;add the non-local dependencies
          (foreach ?nld ?nlds
-                  (if (eq FALSE (member$ ?nld (send ?agObj get-InstructionList))) then
+                  (if (eq FALSE (member$ ?nld (send ?agObj get-ScheduledInstructions))) then
                     ;(printout t "Added non-local dependency " ?nld " to " ?e " from ImpossibleCPV" crlf)
-                    (slot-insert$ ?agObj InstructionList 1 ?nld)))
+                    (slot-insert$ ?agObj ScheduledInstructions 1 ?nld)))
          (retract ?fct))
 
 (defrule MakeCPV 
@@ -338,10 +338,10 @@
          (if (eq FALSE (member$ ?reg (send ?pa get-InstructionList))) then
            (slot-insert$ ?pa InstructionList 1 ?reg))
          (foreach ?nld ?nlds
-                  (if (eq FALSE (member$ ?nld (send ?pa get-InstructionList)))
+                  (if (eq FALSE (member$ ?nld (send ?pa get-ScheduledInstructions)))
                     then
                     ;(printout t "Added non-local dependency " ?nld " to " ?e " from MakeCPV" crlf)
-                    (slot-insert$ ?pa InstructionList 1 ?nld))))
+                    (slot-insert$ ?pa ScheduledInstructions 1 ?nld))))
 ;(printout t "Created a CompensationPathVector for " ?c crlf)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
