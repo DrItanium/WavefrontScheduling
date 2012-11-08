@@ -11,6 +11,13 @@
  =>
  (make-instance of OwnershipDeterminant (Parent ?r)))
 
+(defrule ConstructDeterminantForBasicBlock
+ (Stage DeterminantConstruction $?)
+ (object (is-a BasicBlock) (ID ?b))
+ (not (exists (object (is-a OwnershipDeterminant) (Parent ?b))))
+ =>
+ (make-instance of OwnershipDeterminant (Parent ?b)))
+
 (defrule PopulateDeterminant
  (Stage DeterminantPopulation $?)
  ?fct <- (claim ?a owns ?b)
@@ -22,6 +29,7 @@
  (slot-insert$ ?obj Claims 1 ?a))
 ;now that we have the set of claims for each region it's necessary to figure
 ;out which claims are indirect and direct.
+
 (defrule DetermineIndirectClaim
  (Stage DeterminantResolution $?)
  ?t0 <- (object (is-a OwnershipDeterminant) (Parent ?b) (Claims $?z ?a $?x))
@@ -45,7 +53,7 @@
  (slot-insert$ ?t0 IndirectClaims 1 ?a)
  (modify-instance ?t0 (Claims $?z $?x))
  (modify-instance ?t1 (PotentialChildren $?z0 $?x0)))
-  
+
 (defrule DeleteNonExistentReferences
  (Stage Fixup $?)
  ?region <- (object (is-a Region) (Contents $?a ?b $?c))
@@ -58,6 +66,14 @@
  (object (is-a OwnershipDeterminant) (Parent ?p) 
   (Claims ?a))
  ?obj <- (object (is-a Region) (ID ?p))
+ =>
+ (modify-instance ?obj (Parent ?a)))
+
+(defrule UpdateOwnerOfTargetBasicBlock
+ (Stage FixupUpdate $?)
+ (object (is-a OwnershipDeterminant) (Parent ?p) 
+  (Claims ?a))
+ ?obj <- (object (is-a BasicBlock) (ID ?p))
  =>
  (modify-instance ?obj (Parent ?a)))
 
@@ -76,6 +92,15 @@
  =>
  (unmake-instance ?obj))
 
+(defrule RemoveUnownedElements
+ "Now that we have figured out and updated ownership claims it is necessary to
+ remove leftover entries in other regions"
+ (Stage FixupRename $?)
+ ?r <- (object (is-a Region) (ID ?t) (Contents $?a ?b $?c))
+ (object (is-a TaggedObject) (ID ?b) (Parent ~?t))
+ =>
+ (modify-instance ?r (Contents $?a $?c)))
+
 (defrule FAILURE-TooManyClaimsOfOwnership
  (Stage Fixup $?)
  (object (is-a OwnershipDeterminant) (Parent ?a) 
@@ -86,13 +111,24 @@
   crlf "The claims are " ?z crlf)
  (exit))
 
-(defrule FAILURE-NoRemainingClaims
+(defrule FAILURE-NoRemainingClaimsForRegion
  (Stage Fixup $?)
  (object (is-a OwnershipDeterminant) (Parent ?a) (Claims)
   (PotentialChildren $?pc) (IndirectClaims $?ic))
  (object (is-a Region) (ID ?a) (IsTopLevelRegion FALSE))
  =>
  (printout t "ERROR: " ?a " has no remaining claims!" crlf 
+             ?a " has " $?pc " as it's potential children." crlf
+             ?a " has " $?ic " as it's indirect claims." crlf)
+ (exit))
+
+(defrule FAILURE-NoRemainingClaimsForBasicBlock
+ (Stage Fixup $?)
+ (object (is-a OwnershipDeterminant) (Parent ?a) (Claims)
+  (PotentialChildren $?pc) (IndirectClaims $?ic))
+ (object (is-a BasicBlock) (ID ?a)) 
+ =>
+ (printout t "ERROR: BasicBlock " ?a " has no remaining claims!" crlf 
              ?a " has " $?pc " as it's potential children." crlf
              ?a " has " $?ic " as it's indirect claims." crlf)
  (exit))
