@@ -96,10 +96,10 @@
 (defrule ClaimOwnershipOfBlocks
  "This rule is used to assert ownership claims on basic blocks"
  (Stage ClaimOwnership $?)
- ?f0 <- (object (is-a Hint) (Type FlatList) (ID ?i0) (Contents $? ?b $?))
+ ?f0 <- (object (is-a Hint) (Type FlatList) (Parent ?p) (Contents $? ?b $?))
  (object (is-a BasicBlock) (ID ?b))
  =>
- (assert (claim ?i0 owns ?b)))
+ (assert (claim ?p owns ?b)))
 
 (defrule ClaimEquivalence
  "Asserts that two regions are equivalent if one flat list contains the same
