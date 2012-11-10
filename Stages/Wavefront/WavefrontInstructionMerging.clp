@@ -79,12 +79,17 @@
 				 (Stage WavefrontSchedule $?)
 				 (Substage Merge $?)
 				 ?fct <- (Determine schedule style for ?cpv into block ?e)
-				 (object (is-a BasicBlock) (ID ?e) (Paths $?paths))
+				 (object (is-a BasicBlock) (ID ?e) (Paths $?paths) (Parent ?q))
 				 (object (is-a CompensationPathVector) (ID ?cpv)
 								 (Paths $?cpvPaths) (Parent ?i))
-				 ;there are more paths in the CPV than in the block
 				 (test (not (subsetp ?paths ?cpvPaths)))
 				 =>
+         ;TODO: Put code in here to delete a given instruction from the target
+         ;      instruction list as well. 
+         ;
+         ; Eventually, I will detect if we are in a loop. If we are then it is
+         ; necessary to figure out which paths remain in the loop and those
+         ; that exit. 
 				 (retract ?fct))
 
 

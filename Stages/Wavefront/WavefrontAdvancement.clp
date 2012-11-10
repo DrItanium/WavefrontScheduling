@@ -107,7 +107,10 @@
 					 (retract ?fct)
 					 (assert (Substage Init Identify PhiIdentify PhiNode 
 														 PhiNodeUpdate Pathing Strip Inject 
-														 Acquire Slice AnalyzeInit Analyze 
+														 Acquire Slice AnalyzeInit 
+                             GenerateAnalyze0
+                             GenerateAnalyze
+                             Analyze 
 														 SliceAnalyze MergeInit Merge MergeUpdate
 														 ReopenBlocks
 														 Ponder Rename DependencyAnalysis ScheduleObjectCreation 

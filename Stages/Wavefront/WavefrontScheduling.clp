@@ -231,8 +231,9 @@
          (Stage WavefrontSchedule $?)
          (Substage Acquire $?)
          ?fct <- (Get CPVs out of ?pv for ?e using ?inst $?insts)
-         (object (is-a Instruction) (ID ?inst) (DestinationRegisters $? ?reg $?))
-         (object (is-a PhiNode) (ID ?reg))
+         ;make sure that the parent block is the same
+         (object (is-a Instruction) (ID ?inst) (Parent ?p) (DestinationRegisters $? ?reg $?))
+         (object (is-a PhiNode) (ID ?reg) (Parent ?p))
          =>
          (retract ?fct)
          (assert (Get CPVs out of ?pv for ?e using $?insts)))
@@ -242,8 +243,9 @@
          (Stage WavefrontSchedule $?)
          (Substage Acquire $?)
          ?fct <- (Get CPVs out of ?pv for ?e using ?inst $?insts)
-         (object (is-a Instruction) (ID ?inst) (Operands $? ?reg $?))
-         (object (is-a PhiNode) (ID ?reg))
+         ;make sure that the parent block is the same 
+         (object (is-a Instruction) (ID ?inst) (Parent ?p) (Operands $? ?reg $?))
+         (object (is-a PhiNode) (ID ?reg) (Parent ?p))
          =>
          (retract ?fct)
          (assert (Get CPVs out of ?pv for ?e using $?insts)))
@@ -271,7 +273,7 @@
          (Stage WavefrontSchedule $?)
          (Substage Acquire $?)
          ?fct <- (Marked ?inst as valid for block ?e)
-         (exists (object (is-a CompensationPathVector) (Parent ?inst)))
+         ;(exists (object (is-a CompensationPathVector) (Parent ?inst)))
          (object (is-a CompensationPathVector) (Parent ?inst) (ID ?cpvID))
          ?agObj <- (object (is-a PathAggregate) (ID ?ag) (Parent ?e))
          (object (is-a Instruction) (ID ?inst) (NonLocalDependencies $?nlds)
@@ -297,7 +299,7 @@
          (Stage WavefrontSchedule $?)
          (Substage Acquire $?)
          ?fct <- (Marked ?inst as valid for block ?e)
-         (exists (object (is-a CompensationPathVector) (Parent ?inst)))
+         ;(exists (object (is-a CompensationPathVector) (Parent ?inst)))
          (object (is-a CompensationPathVector) (Parent ?inst) (ID ?cpvID))
          ?agObj <- (object (is-a PathAggregate) (ID ?ag) (Parent ?e))
          (object (is-a Instruction) (ID ?inst) (NonLocalDependencies $?nlds)
@@ -305,6 +307,7 @@
          (test (neq FALSE (member$ ?cpvID (send ?agObj
                                                 get-ImpossibleCompensationPathVectors))))
          =>
+         ;(printout t "Marked " ?inst " with impossible CPV" crlf)
          ;add the non-local dependencies
          (foreach ?nld ?nlds
                   (if (eq FALSE (member$ ?nld (send ?agObj get-ScheduledInstructions))) then
@@ -335,8 +338,10 @@
          (if (eq FALSE (member$ ?inst (send ?pa get-InstructionList)))
            then 
            (slot-insert$ ?pa InstructionList 1 ?inst))
+         ;(printout t "Added " ?inst " to " ?name crlf)
          (if (eq FALSE (member$ ?reg (send ?pa get-InstructionList))) then
            (slot-insert$ ?pa InstructionList 1 ?reg))
+         ;(printout t "Added " ?reg " to " ?name crlf)
          (foreach ?nld ?nlds
                   (if (eq FALSE (member$ ?nld (send ?pa get-ScheduledInstructions)))
                     then
@@ -356,6 +361,7 @@
          ?pa <- (object (is-a PathAggregate) (InstructionList $?a ?b $?c ?b $?d))
          =>
          (modify-instance ?pa (InstructionList $?a ?b $?c $?d)))
+
 (defrule GenerateInitialSliceFactsForElementsOnTheWavefront 
          (Stage WavefrontSchedule $?)
          (Substage Slice $?)
@@ -469,7 +475,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defrule SelectCPVForAnalysis
          (Stage WavefrontSchedule $?)
-         (Substage Analyze $?)
+         (Substage GenerateAnalyze0 $?)
          (object (is-a Wavefront) (Parent ?r) (Contents $? ?e $?))
          ?bb <- (object (is-a BasicBlock) (ID ?e) (IsOpen TRUE))
          ;(not (exists (Schedule ?e for ?r)))
@@ -499,18 +505,20 @@
 
 (defrule SegmentCPVsApart
          (Stage WavefrontSchedule $?)
-         (Substage Analyze $?)
+         (Substage GenerateAnalyze $?)
          ?fct <- (Analyze block ?e for ?r using cpvs ?cpv $?cpvs)
          (object (is-a BasicBlock) (ID ?e))
          (object (is-a CompensationPathVector) (ID ?cpv) (Parent ?i))
          =>
+         ;(printout t "Analyze instruction " ?i " { associated cpv " ?cpv 
+         ; " } for " ?e crlf)
          (retract ?fct)
          (assert (Analyze block ?e for ?r using cpvs $?cpvs)
                  (Analyze instruction ?i { associated cpv ?cpv } for ?e)))
 
 (defrule RetractCPVSegmentationFact
          (Stage WavefrontSchedule $?)
-         (Substage Analyze $?)
+         (Substage GenerateAnalyze $?)
          ?fct <- (Analyze block ? for ? using cpvs)
          =>
          (retract ?fct))
@@ -519,14 +527,18 @@
          (Stage WavefrontSchedule $?)
          (Substage Analyze $?)
          ?fct <- (Analyze instruction ?i { associated cpv ?cpv } for ?e)
-         ?agObj <- (object (is-a PathAggregate) (Parent ?e) (InstructionList $?il))
-         (object (is-a Instruction) (ID ?i) 
-                 (LocalDependencies $?ld)
+         ?agObj <- (object (is-a PathAggregate) (Parent ?e) (InstructionList $?il)
+           (ScheduledInstructions $?sched))
+         (object (is-a Instruction) (ID ?i) (LocalDependencies $?ld)
                  (NonLocalDependencies $?nld))
          (test (not (and (subsetp ?ld ?il)
-                         (subsetp ?nld ?il))))
+                         (subsetp ?nld ?sched))))
          =>
          ;(printout t ?i " is impossible to schedule into " ?e crlf)
+         ;(printout t "Local Dependencies = " ?ld crlf)
+         ;(printout t "Non Local Dependencies = " ?nld crlf)
+         ;(printout t "Instruction List = " ?il crlf)
+         ;(printout t "Schedule = " ?sched crlf)
          (retract ?fct)
          (bind ?ind (member$ ?i ?il))
          (if (neq ?ind FALSE) then 
@@ -538,12 +550,13 @@
          (Substage Analyze $?)
          ?fct <- (Analyze instruction ?i { associated cpv ?cpv } for ?e)
          ?paObj <- (object (is-a PathAggregate) (Parent ?e) (InstructionList $?il)
-                           (ScheduledInstructions $?sched))
+                           (ScheduledInstructions $?sched)
+                           (CompensationPathVectors $?cpvs))
          (object (is-a Instruction) (ID ?i) (LocalDependencies $?ld) 
                  (NonLocalDependencies $?nld) (Parent ?parent))
          (test (and (not (subsetp ?ld ?sched))
-                    (subsetp ?ld ?il)
-                    (subsetp ?nld ?il)))
+                         (subsetp ?ld ?il)
+                         (subsetp ?nld ?sched)))
          =>
          ;(printout t "Can't schedule " ?i " into " ?e " right now!" crlf)
          ;(printout t "Non Local Dependencies = " ?nld crlf)
@@ -551,6 +564,8 @@
          ;(printout t "Scheduled = " ?sched crlf)
          ;(printout t "Instruction List = " ?il crlf)
          ;(printout t "From = " ?parent crlf)
+         ;(printout t "CPVS = " ?cpvs crlf)
+         ;(facts)
          (retract ?fct)
          (assert (Cant schedule ?cpv for ?e now)))
 
@@ -911,7 +926,8 @@
          =>
          ;this returns a tuple
            (retract ?ponder ?f)
-           (assert (Substage Analyze SliceAnalyze MergeInit Merge MergeUpdate
+           (assert (Substage GenerateAnalyze0 GenerateAnalyze Analyze 
+                    SliceAnalyze MergeInit Merge MergeUpdate
                              ReopenBlocks Ponder $?rest)))
 (defrule FinishSchedulingIntoBlock
          (declare (salience -1))

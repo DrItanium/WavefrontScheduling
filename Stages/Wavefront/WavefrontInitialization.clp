@@ -39,6 +39,8 @@
 									Acquire 
 									Slice 
 									AnalyzeInit 
+                  GenerateAnalyze0
+                  GenerateAnalyze
 									Analyze 
 									SliceAnalyze
 									MergeInit 
