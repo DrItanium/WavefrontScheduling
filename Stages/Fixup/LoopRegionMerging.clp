@@ -224,6 +224,6 @@
  (Stage CleanUp-Merger $?)
  ;?fl <- (object (is-a Hint) (Type FlatList))
  =>
- (printout t "Deleted all flat lists" crlf)
+ ;(printout t "Deleted all flat lists" crlf)
  (progn$ (?fl (find-all-instances ((?list Hint)) (eq ?list:Type FlatList))) 
   (unmake-instance ?fl)))

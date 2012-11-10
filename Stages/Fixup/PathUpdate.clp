@@ -91,7 +91,7 @@
  (Stage CleanUp-Merger $?)
  ;?obj <- (object (is-a OwnershipDeterminant))
  =>
- (printout t "Deleted all OwnershipDeterminants" crlf)
+ ;(printout t "Deleted all OwnershipDeterminants" crlf)
  (progn$ (?obj (find-all-instances ((?list OwnershipDeterminant)) TRUE))
  (unmake-instance ?obj)))
 
