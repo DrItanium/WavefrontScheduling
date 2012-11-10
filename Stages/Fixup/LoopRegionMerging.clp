@@ -219,8 +219,11 @@
  (printout t "==================" crlf)
  (send ?id print))
 
-(defrule DeallocateFlatLists
+(defrule DeleteFlatLists 
+ "Deletes all of the flat lists in a single rule fire"
  (Stage CleanUp-Merger $?)
- ?fl <- (object (is-a Hint) (Type FlatList))
+ ;?fl <- (object (is-a Hint) (Type FlatList))
  =>
- (unmake-instance ?fl))
+ (printout t "Deleted all flat lists" crlf)
+ (progn$ (?fl (find-all-instances ((?list Hint)) (eq ?list:Type FlatList))) 
+  (unmake-instance ?fl)))

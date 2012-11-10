@@ -87,10 +87,13 @@
  (slot-insert$ ?region Contents 1 ?a))
 
 (defrule CleanupOwnershipDeterminants
+ "Deletes all of the OwnershipDeterminant objects in a single rule fire"
  (Stage CleanUp-Merger $?)
- ?obj <- (object (is-a OwnershipDeterminant))
+ ;?obj <- (object (is-a OwnershipDeterminant))
  =>
- (unmake-instance ?obj))
+ (printout t "Deleted all OwnershipDeterminants" crlf)
+ (progn$ (?obj (find-all-instances ((?list OwnershipDeterminant)) TRUE))
+ (unmake-instance ?obj)))
 
 (defrule RemoveUnownedElements
  "Now that we have figured out and updated ownership claims it is necessary to
