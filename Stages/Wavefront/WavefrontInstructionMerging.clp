@@ -82,6 +82,7 @@
 				 (object (is-a BasicBlock) (ID ?e) (Paths $?paths) (Parent ?q))
 				 (object (is-a CompensationPathVector) (ID ?cpv)
 								 (Paths $?cpvPaths) (Parent ?i))
+         ?agObj <- (object (is-a PathAggregate) (Parent ?e))
 				 (test (not (subsetp ?paths ?cpvPaths)))
 				 =>
          ;TODO: Put code in here to delete a given instruction from the target
@@ -90,7 +91,12 @@
          ; Eventually, I will detect if we are in a loop. If we are then it is
          ; necessary to figure out which paths remain in the loop and those
          ; that exit. 
-				 (retract ?fct))
+         ;this should prevent a potential infinite loop
+         ;(printout t "Preventing " ?i " from being scheduled into " ?e crlf)
+				 (retract ?fct)
+         (bind ?ind (member$ ?i (send ?agObj get-InstructionList)))
+         (if (neq FALSE ?ind) then 
+           (slot-delete$ ?agObj InstructionList ?ind ?ind)))
 
 
 (defrule MoveInstructionIntoBlock
