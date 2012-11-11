@@ -32,34 +32,45 @@
 
 (defrule DetermineIndirectClaim
  (Stage DeterminantResolution $?)
- ?t0 <- (object (is-a OwnershipDeterminant) (Parent ?b) (Claims $?z ?a $?x))
+ ?t0 <- (object (is-a OwnershipDeterminant) (Parent ?b) (Claims $? ?a $?))
  (object (is-a OwnershipDeterminant) (Parent ~?b) 
   (PotentialChildren $? ?b $?) (Claims $? ?a $?))
  ?t1 <- (object (is-a OwnershipDeterminant) (Parent ?a) 
-   (PotentialChildren $?z0 ?b $?x0))
+   (PotentialChildren $? ?b $?))
  =>
+ ;let's see if this is faster
+ (bind ?ind0 (member$ ?a (send ?t0 get-Claims)))
+ (bind ?ind1 (member$ ?b (send ?t1 get-PotentialChildren)))
  (slot-insert$ ?t0 IndirectClaims 1 ?a)
- (modify-instance ?t1 (PotentialChildren $?z0 $?x0))
- (modify-instance ?t0 (Claims $?z $?x)))
+ (slot-delete$ ?t0 Claims ?ind0 ?ind0)
+ (slot-delete$ ?t1 PotentialChildren ?ind1 ?ind1))
+ ;(modify-instance ?t1 (PotentialChildren $?z0 $?x0))
+ ;(modify-instance ?t0 (Claims $?z $?x)))
 
 (defrule DetermineIndirectIndirectClaim
  (Stage DeterminantIndirectResolution $?)
- ?t0 <- (object (is-a OwnershipDeterminant) (Parent ?b) (Claims $?z ?a $?x))
+ ?t0 <- (object (is-a OwnershipDeterminant) (Parent ?b) (Claims $? ?a $?))
  (object (is-a OwnershipDeterminant) (Parent ~?b&~?a) 
                 (IndirectClaims $? ?a $?) (PotentialChildren $? ?b $?))
  ?t1 <- (object (is-a OwnershipDeterminant) (Parent ?a)
-                (PotentialChildren $?z0 ?b $?x0))
+                (PotentialChildren $? ?b $?))
  =>
+ (bind ?ind0 (member$ ?a (send ?t0 get-Claims)))
+ (bind ?ind1 (member$ ?b (send ?t1 get-PotentialChildren)))
  (slot-insert$ ?t0 IndirectClaims 1 ?a)
- (modify-instance ?t0 (Claims $?z $?x))
- (modify-instance ?t1 (PotentialChildren $?z0 $?x0)))
+ (slot-delete$ ?t0 Claims ?ind0 ?ind0)
+ (slot-delete$ ?t1 PotentialChildren ?ind1 ?ind1))
+ ;(modify-instance ?t0 (Claims $?z $?x))
+ ;(modify-instance ?t1 (PotentialChildren $?z0 $?x0)))
 
 (defrule DeleteNonExistentReferences
  (Stage Fixup $?)
- ?region <- (object (is-a Region) (Contents $?a ?b $?c))
+ ?region <- (object (is-a Region) (Contents $? ?b $?))
  (not (exists (object (ID ?b))))
  =>
- (modify-instance ?region (Contents $?a $?c)))
+ (bind ?ind0 (member$ ?b (send ?region get-Contents)))
+ (slot-delete$ ?region Contents ?ind0 ?ind0))
+ ;(modify-instance ?region (Contents $?a $?c)))
 
 (defrule UpdateOwnerOfTargetRegion
  (Stage FixupUpdate $?)
