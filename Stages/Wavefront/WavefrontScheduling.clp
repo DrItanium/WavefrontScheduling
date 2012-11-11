@@ -226,8 +226,9 @@
          =>
          (retract ?fct)
          (assert (Get CPVs out of ?pv for ?e using $?insts)))
-(defrule DisableInstructionsDependentOnPhis
-         (declare (salience 1))
+
+(defrule DisableInstructionsDependentOnDestinationPhis
+         (declare (salience 2))
          (Stage WavefrontSchedule $?)
          (Substage Acquire $?)
          ?fct <- (Get CPVs out of ?pv for ?e using ?inst $?insts)
@@ -235,27 +236,48 @@
          (object (is-a Instruction) (ID ?inst) (Parent ?p) (DestinationRegisters $? ?reg $?))
          (object (is-a PhiNode) (ID ?reg) (Parent ?p))
          =>
+         ;(printout t "Disabled " ?inst " because it was dependent on a" 
+         ;            " destination phi " ?reg crlf)
          (retract ?fct)
          (assert (Get CPVs out of ?pv for ?e using $?insts)))
 
-(defrule DisableInstructionsDependentOnPhis-Operands
-         (declare (salience 1))
+;(defrule DisableInstructionsDependentOnSourcePhis
+;         (declare (salience 2))
+;         (Stage WavefrontSchedule $?)
+;         (Substage Acquire $?)
+;         ?fct <- (Get CPVs out of ?pv for ?e using ?inst $?insts)
+;         ;make sure that the parent block is the same
+;         (object (is-a Instruction) (ID ?inst) (Parent ?p) (Operands $? ?reg $?))
+;         (object (is-a PhiNode) (ID ?reg) (Parent ?p))
+;         =>
+;         (printout t "Disabled " ?inst " because it was dependent on a" 
+;                     " source phi " ?reg crlf)
+;         (retract ?fct)
+;         (assert (Get CPVs out of ?pv for ?e using $?insts)))
+
+
+(defrule DisableInstructionsDependentOnLocalPhis
+         (declare (salience 2))
          (Stage WavefrontSchedule $?)
          (Substage Acquire $?)
          ?fct <- (Get CPVs out of ?pv for ?e using ?inst $?insts)
          ;make sure that the parent block is the same 
-         (object (is-a Instruction) (ID ?inst) (Parent ?p) (Operands $? ?reg $?))
-         (object (is-a PhiNode) (ID ?reg) (Parent ?p))
+         (object (is-a Instruction) (ID ?inst) (LocalDependencies $? ?reg $?))
+         (object (is-a PhiNode) (ID ?reg))
          =>
+         ;(printout t "Disabled " ?inst " because it was dependent on a" 
+         ;            " local phi " ?reg crlf)
          (retract ?fct)
          (assert (Get CPVs out of ?pv for ?e using $?insts)))
+
 (defrule TagValidCPVs
          (Stage WavefrontSchedule $?)
          (Substage Acquire $?)
          ?fct <- (Get CPVs out of ?pv for ?e using ?inst $?insts)
-         (object (is-a Instruction) (ID ?inst) (IsTerminator FALSE) (HasCallDependency FALSE))
+         ?i <- (object (is-a Instruction) (ID ?inst) (IsTerminator FALSE) (HasCallDependency FALSE))
          =>
-         ;(printout t "Tagged " ?inst " as valid for " ?e crlf)
+         ;(printout t "Tagged " ?inst " (a " (class ?i) " ) as valid for " ?e crlf)
+         ;(if (eq (class ?i) StoreInstruction) then (send ?i print))
          ;(facts)
          (retract ?fct)
          (assert (Get CPVs out of ?pv for ?e using $?insts)
@@ -463,6 +485,7 @@
                            (CompensationPathVectors $?cpvIDs))
          (test (> (length$ ?cpvIDs) 0))
          =>
+         ;(send ?agObj print)
          (modify-instance ?agObj (TargetCompensationPathVectors $?cpvIDs)))
 
 (defrule SetifyTargetCompensationPathVectors
@@ -523,6 +546,36 @@
          =>
          (retract ?fct))
 
+(defrule TargetInstructionDoesNotHaveACorrespondingCPV
+ "Sometimes it turns out that sometimes store instructions will add certain
+ instructions to the instruction list even though they don't have a valid CPV. 
+ This rule removes those elements from the path aggregate"
+ (Stage WavefrontSchedule $?)
+ (Substage GenerateAnalyze $?)
+ ?pa <- (object (is-a PathAggregate) (Parent ?e) (InstructionList $?b ?a $?c))
+ (not (exists (object (is-a CompensationPathVector) (Parent ?a))))
+ =>
+ ;(printout t "NOTE: Removed " ?a " from the path aggregate of " ?e 
+ ;            " because a CPV wasn't tied to the instruction" crlf)
+ (modify-instance ?pa (InstructionList $?b $?c)))
+
+(defrule TargetInstructionIsNotRegisteredWithTheTargetPathAggregate
+ "Sometimes it turns out that sometimes store instructions will add certain
+ instructions to the instruction list even though they don't have a valid CPV
+ registered with the path aggregate. This rule removes those elements from the
+ path aggregate"
+ (Stage WavefrontSchedule $?)
+ (Substage GenerateAnalyze $?)
+ ?pa <- (object (is-a PathAggregate) (Parent ?e) (InstructionList $?b ?a $?c)
+                (CompensationPathVectors $?cpvs))
+ (object (is-a CompensationPathVector) (Parent ?a) (ID ?id))
+ (test (eq FALSE (member$ ?id $?cpvs)))
+ =>
+ ;(printout t "NOTE: Removed " ?a " from the path aggregate of " ?e " because "
+ ;            "the corresponding CPV wasn't registered with the path aggregate"
+ ;            crlf)
+ (modify-instance ?pa (InstructionList $?b $?c)))
+ 
 (defrule TargetCPVIsImpossibleToScheduleIntoTargetBlock
          (Stage WavefrontSchedule $?)
          (Substage Analyze $?)
