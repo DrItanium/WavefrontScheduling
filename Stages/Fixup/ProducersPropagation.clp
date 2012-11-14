@@ -22,41 +22,42 @@
 ;ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 ;(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+;------------------------------------------------------------------------------
 (defrule PropagateBlockProducers
-				 (Stage ModificationPropagation $?)
-				 (object (is-a BasicBlock) (ID ?b) (Parent ?r) 
-								 (Produces $?produces))
-				 =>
-				 (assert (Give ?r from ?b the following produced items $?produces)))
-
+			(Stage ModificationPropagation $?)
+			(object (is-a BasicBlock) (ID ?b) (Parent ?r) 
+					  (Produces $?produces))
+			=>
+			(assert (Give ?r from ?b the following produced items $?produces)))
+;------------------------------------------------------------------------------
 (defrule PropagateRegionProducers-ParentExists
-				 (Stage ModificationPropagation $?)
-				 ?fct <- (Give ?r from ? the following produced items $?produced)
-				 ?region <- (object (is-a Region) (ID ?r) (Parent ?p))
-				 (exists (object (is-a Region) (ID ?p)))
-				 =>
-				 (retract ?fct)
-				 (assert (Give ?p from ?r the following produced items $?produced))
-				 (slot-insert$ ?region Produces 1 ?produced))
-
+			(Stage ModificationPropagation $?)
+			?fct <- (Give ?r from ? the following produced items $?produced)
+			?region <- (object (is-a Region) (ID ?r) (Parent ?p))
+			(exists (object (is-a Region) (ID ?p)))
+			=>
+			(retract ?fct)
+			(assert (Give ?p from ?r the following produced items $?produced))
+			(slot-insert$ ?region Produces 1 ?produced))
+;------------------------------------------------------------------------------
 (defrule PropagateRegionProducers-ParentDoesntExist
-				 (Stage ModificationPropagation $?)
-				 ?fct <- (Give ?r from ? the following produced items $?produced)
-				 ?region <- (object (is-a Region) (ID ?r) (Parent ?p))
-				 (not (exists (object (is-a Region) (ID ?p))))
-				 =>
-				 (retract ?fct)
-				 (slot-insert$ ?region Produces 1 ?produced))
-
+			(Stage ModificationPropagation $?)
+			?fct <- (Give ?r from ? the following produced items $?produced)
+			?region <- (object (is-a Region) (ID ?r) (Parent ?p))
+			(not (exists (object (is-a Region) (ID ?p))))
+			=>
+			(retract ?fct)
+			(slot-insert$ ?region Produces 1 ?produced))
+;------------------------------------------------------------------------------
 (defrule IdentifyNonLocalDependencies
-				 (Stage ModificationPropagation $?)
-				 ?i0 <- (object (is-a Instruction) (Parent ?p) (ID ?t0) 
-												(Operands $? ?op $?))
-				 (object (is-a TaggedObject) (ID ?op) (Parent ~?p))
-				 (test (eq FALSE (member$ ?op (send ?i0 get-NonLocalDependencies))))
-				 =>
-         ;since we don't copy the set of producers at the start anymore we
-         ;need this operation as well
-         (slot-insert$ ?i0 Producers 1 ?op)
-				 (slot-insert$ ?i0 NonLocalDependencies 1 ?op))
+			(Stage ModificationPropagation $?)
+			?i0 <- (object (is-a Instruction) (Parent ?p) (ID ?t0) 
+								(Operands $? ?op $?))
+			(object (is-a TaggedObject) (ID ?op) (Parent ~?p))
+			(test (not (member$ ?op (send ?i0 get-NonLocalDependencies))))
+			=>
+			;since we don't copy the set of producers at the start anymore we
+			;need this operation as well
+			(slot-insert$ ?i0 Producers 1 ?op)
+			(slot-insert$ ?i0 NonLocalDependencies 1 ?op))
+;------------------------------------------------------------------------------
