@@ -37,10 +37,9 @@
 			?hint <- (object (is-a Path) (Closed FALSE) (ID ?id) (Parent ?p) 
 								  (ReferenceCount ?rc&:(> ?rc 1)))
 			=>
-			(bind ?newName (gensym*))
 			(send ?hint .DecrementReferenceCount)
 			(retract ?fct)
-			(make-instance ?newName of Path 
+			(make-instance of Path 
 								(Parent ?p) 
 								(Contents (send ?hint get-Contents) ?next)))
 ;------------------------------------------------------------------------------
@@ -81,10 +80,9 @@
 			?hint <- (object (is-a Path) (Closed FALSE) (ID ?id) (Parent ?p)
 								  (ReferenceCount ?rc&:(> ?rc 1)))
 			=>
-			(bind ?name (gensym*))
 			(send ?hint .DecrementReferenceCount)
 			(retract ?fct)
-			(make-instance ?name of Path 
+			(make-instance of Path 
 								(Closed TRUE) 
 								(ExitBlock ?bb) 
 								(Contents (send ?hint get-Contents))))
