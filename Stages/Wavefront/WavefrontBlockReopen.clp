@@ -24,55 +24,52 @@
 ;SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;------------------------------------------------------------------------------
 (defrule AssertReopenBlocksOnWavefront
-				 (Stage WavefrontSchedule $?)
-				 (Substage ReopenBlocks $?)
-				 ?fct <- (Reopen blocks from ?cpv)
-				 ?obj <- (object (is-a CompensationPathVector) (ID ?cpv) 
-												 (Failures $?failures))
-				 =>
-				 (retract ?fct)
-				 (modify-instance ?obj (Failures))
-				 (assert (From ?cpv reopen $?failures)))
-
+			(Stage WavefrontSchedule $?)
+			(Substage ReopenBlocks $?)
+			?fct <- (Reopen blocks from ?cpv)
+			?obj <- (object (is-a CompensationPathVector) (ID ?cpv) 
+								 (Failures $?failures))
+			=>
+			(retract ?fct)
+			(modify-instance ?obj (Failures))
+			(assert (From ?cpv reopen $?failures)))
+;------------------------------------------------------------------------------
 (defrule ReopenBlockOnWavefront
-				 (Stage WavefrontSchedule $?)
-				 (Substage ReopenBlocks $?)
-				 ?fct <- (From ?cpv reopen ?fail $?failures)
-				 ?wave <- (object (is-a Wavefront) (ID ?w) (Closed $?a ?fail $?b)
-													(Contents $?cnts))
-				 ?bb <- (object (is-a BasicBlock) (ID ?fail) (IsOpen FALSE))
-				 ?pa <- (object (is-a PathAggregate) (Parent ?fail)
-												(ImpossibleCompensationPathVectors $?icpv))
-				 =>
-				 (modify-instance ?bb (IsOpen TRUE))
-				 (modify-instance ?pa (ImpossibleCompensationPathVectors)
-													(TargetCompensationPathVectors $?icpv))
-				 (foreach ?q ?icpv
-					(slot-insert$ ?pa InstructionList 1 
-					 (send (symbol-to-instance-name ?q) get-Parent)))
-
-				 (modify-instance ?wave (Contents $?cnts ?fail) (Closed ?a ?b))
-				 (retract ?fct)
-				 (assert (From ?cpv reopen $?failures)))
-
+			(Stage WavefrontSchedule $?)
+			(Substage ReopenBlocks $?)
+			?fct <- (From ?cpv reopen ?fail $?failures)
+			?wave <- (object (is-a Wavefront) (ID ?w) (Closed $?a ?fail $?b)
+								  (Contents $?cnts))
+			?bb <- (object (is-a BasicBlock) (ID ?fail) (IsOpen FALSE))
+			?pa <- (object (is-a PathAggregate) (Parent ?fail)
+								(ImpossibleCompensationPathVectors $?icpv))
+			=>
+			(modify-instance ?bb (IsOpen TRUE))
+			(modify-instance ?pa (ImpossibleCompensationPathVectors)
+								  (TargetCompensationPathVectors $?icpv))
+			(progn$ (?q ?icpv)
+					  (slot-insert$ ?pa InstructionList 1 
+										 (send (symbol-to-instance-name ?q) get-Parent)))
+			(modify-instance ?wave (Contents $?cnts ?fail) (Closed ?a ?b))
+			(retract ?fct)
+			(assert (From ?cpv reopen $?failures)))
+;------------------------------------------------------------------------------
 (defrule ReaddFailureToCPV
-				 (Stage WavefrontSchedule $?)
-				 (Substage ReopenBlocks $?)
-				 ?fct <- (From ?cpv reopen ?fail $?failures)
-				 ?wave <- (object (is-a Wavefront) (ID ?w) (Closed $?c))
-				 (test (eq FALSE (member$ ?fail $?c)))
-				 ?obj <- (object (is-a CompensationPathVector) (ID ?cpv))
-				 =>
-				 (slot-insert$ ?obj Failures 1 ?fail)
-				 (retract ?fct)
-				 (assert (From ?cpv reopen $?failures)))
-
+			(Stage WavefrontSchedule $?)
+			(Substage ReopenBlocks $?)
+			?fct <- (From ?cpv reopen ?fail $?failures)
+			?wave <- (object (is-a Wavefront) (ID ?w) (Closed $?c))
+			(test (not (member$ ?fail $?c)))
+			?obj <- (object (is-a CompensationPathVector) (ID ?cpv))
+			=>
+			(slot-insert$ ?obj Failures 1 ?fail)
+			(retract ?fct)
+			(assert (From ?cpv reopen $?failures)))
+;------------------------------------------------------------------------------
 (defrule RetractEmptyReopenFact
-				 (Stage WavefrontSchedule $?)
-				 (Substage ReopenBlocks $?)
-				 ?fct <- (From ? reopen)
-				 =>
-				 (retract ?fct))
-
-
-
+			(Stage WavefrontSchedule $?)
+			(Substage ReopenBlocks $?)
+			?fct <- (From ? reopen)
+			=>
+			(retract ?fct))
+;------------------------------------------------------------------------------
