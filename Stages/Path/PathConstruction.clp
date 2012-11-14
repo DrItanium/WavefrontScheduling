@@ -28,21 +28,21 @@
 ; Written by Joshua Scoggins (6/3/2012)
 ;------------------------------------------------------------------------------
 (defrule StartPathConstruction-NestedEntrance
-				 (declare (salience 3))
-				 (Stage Path $?)
-				 ?r0 <- (object (is-a Region) (CanWavefrontSchedule TRUE) 
-												(Entrances $? ?a $?) (ID ?n) (Contents $? ?z $?))
-				 (object (is-a Region) (ID ?z) (Parent ?n) (Entrances $? ?a $?))
-				 (object (is-a BasicBlock) (ID ?a) (Parent ~?n))
-				 =>
-				 (make-instance (gensym*) of Path (Parent ?n) (Contents ?z)))
+			(declare (salience 3))
+			(Stage Path $?)
+			?r0 <- (object (is-a Region) (CanWavefrontSchedule TRUE) 
+								(Entrances $? ?a $?) (ID ?n) (Contents $? ?z $?))
+			(object (is-a Region) (ID ?z) (Parent ?n) (Entrances $? ?a $?))
+			(object (is-a BasicBlock) (ID ?a) (Parent ~?n))
+			=>
+			(make-instance of Path (Parent ?n) (Contents ?z)))
 ;------------------------------------------------------------------------------
 (defrule StartPathConstruction-BasicBlock
-				 (declare (salience 3))
-				 (Stage Path $?)
-				 ?r0 <- (object (is-a Region) (CanWavefrontSchedule TRUE) 
-												(Entrances $? ?a $?) (ID ?n))
-				 (object (is-a BasicBlock) (ID ?a) (Parent ?n))
-				 =>
-				 (make-instance (gensym*) of Path (Parent ?n) (Contents ?a)))
+			(declare (salience 3))
+			(Stage Path $?)
+			?r0 <- (object (is-a Region) (CanWavefrontSchedule TRUE) 
+								(Entrances $? ?a $?) (ID ?n))
+			(object (is-a BasicBlock) (ID ?a) (Parent ?n))
+			=>
+			(make-instance of Path (Parent ?n) (Contents ?a)))
 ;------------------------------------------------------------------------------
