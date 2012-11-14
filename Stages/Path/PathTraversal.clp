@@ -112,7 +112,7 @@
 			(object (is-a BasicBlock) (ID ?curr) (Parent ?p) 
 					  (Successors $? ?next $?))
 			(object (is-a BasicBlock) (ID ?next) (Parent ?p))
-			(test (not (member$ ?next (create$ $?before ?curr))))
+			(test (member$ ?next (create$ $?before ?curr)))
 			=>
 			(send ?path .IncrementReferenceCount)
 			(assert (Close ?id with ?next)))
@@ -124,7 +124,7 @@
 								  (Contents $?before ?curr))
 			(object (is-a Region) (ID ?curr) (Parent ?p) (Exits $? ?next $?))
 			(object (is-a BasicBlock) (ID ?next) (Parent ?p))
-			(test (not (member$ ?next (create$ $?before ?curr))))
+			(test (member$ ?next (create$ $?before ?curr)))
 			=>
 			(send ?path .IncrementReferenceCount)
 			(assert (Close ?id with ?next)))
@@ -136,7 +136,7 @@
 								  (Contents $?before ?curr))
 			(object (is-a BasicBlock) (ID ?curr) (Parent ?p) (Successors $? ?s $?))
 			(object (is-a Region) (ID ?next) (Parent ?p) (Entrances $? ?s $?))
-			(test (not (member$ ?next (create$ $?before ?curr))))
+			(test (member$ ?next (create$ $?before ?curr)))
 			=>
 			(send ?path .IncrementReferenceCount)
 			(assert (Close ?id with ?next)))
@@ -148,7 +148,7 @@
 								  (Contents $?before ?curr))
 			(object (is-a Region) (ID ?curr) (Parent ?p) (Exits $? ?e $?))
 			(object (is-a Region) (ID ?next) (Parent ?p) (Entrances $? ?e $?)) 
-			(test (not (member$ ?next (create$ $?before ?curr))))
+			(test (member$ ?next (create$ $?before ?curr)))
 			=>
 			(send ?path .IncrementReferenceCount)
 			(assert (Close ?next with ?id)))
