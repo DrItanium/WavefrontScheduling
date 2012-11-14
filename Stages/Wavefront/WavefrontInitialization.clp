@@ -23,7 +23,6 @@
 ;(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;------------------------------------------------------------------------------
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defrule InitializeWavefrontSchedulingFacts
 			(declare (salience 1001))
 			(Stage WavefrontSchedule $?)
@@ -39,8 +38,8 @@
 									Acquire 
 									Slice 
 									AnalyzeInit 
-                  GenerateAnalyze0
-                  GenerateAnalyze
+									GenerateAnalyze0
+									GenerateAnalyze
 									Analyze 
 									SliceAnalyze
 									MergeInit 
@@ -60,7 +59,7 @@
 									Advance
 									AdvanceEnd
 									Update)))
-
+;------------------------------------------------------------------------------
 (defrule NextWavefrontSchedulingSubstage
 			(declare (salience -1000))
 			(Stage WavefrontSchedule $?)
@@ -68,32 +67,33 @@
 			=>
 			(retract ?fct)
 			(assert (Substage $?rest)))
-
+;------------------------------------------------------------------------------
 (defrule RetractSubstageCompletely
 			(declare (salience -1001))
 			(Stage WavefrontSchedule $?)
 			?fct <- (Substage)
 			=>
 			(retract ?fct))
-
+;------------------------------------------------------------------------------
 (defrule InitializeWavefrontSchedulingForARegion-SelectBlockDirectly
 			(declare (salience 2))
 			(Stage WavefrontInit $?)
 			(object (is-a Region) (CanWavefrontSchedule TRUE) (ID ?r) 
-			 (Entrances $? ?e $?))
+					  (Entrances $? ?e $?))
 			(object (is-a BasicBlock) (ID ?e) (Parent ?r))
 			=>
 			(assert (Add ?e to wavefront for ?r)))
-
+;------------------------------------------------------------------------------
 (defrule InitializeWavefrontSchedulingForARegion-AssertRegionInstead
 			(declare (salience 2))
 			(Stage WavefrontInit $?)
-			(object (is-a Region) (CanWavefrontSchedule TRUE) (ID ?r) (Entrances $? ?e $?))
+			(object (is-a Region) (CanWavefrontSchedule TRUE) (ID ?r) 
+					  (Entrances $? ?e $?))
 			(object (is-a BasicBlock) (ID ?e) (Parent ~?r))
 			(object (is-a Region) (Parent ?r) (Entrances $? ?e $?) (ID ?q))
 			=>
 			(assert (Add ?q to wavefront for ?r)))
-
+;------------------------------------------------------------------------------
 (defrule MergeWavefrontCreationContents-Convert-SingleSingle
 			(declare (salience 1))
 			(Stage WavefrontInit $?)
@@ -103,7 +103,7 @@
 			=>
 			(retract ?f0 ?f1)
 			(assert (Create wavefront for ?r containing ?v0 ?v1)))
-
+;------------------------------------------------------------------------------
 (defrule MergeWavefrontCreationContents-Convert-MultiSingle
 			(declare (salience 1))
 			(Stage WavefrontInit $?)
@@ -113,7 +113,7 @@
 			=>
 			(retract ?f0 ?f1)
 			(assert (Create wavefront for ?r containing $?g0 ?v0)))
-
+;------------------------------------------------------------------------------
 (defrule MergeWavefrontCreationContents-Convert-MultiMulti
 			(declare (salience 1))
 			(Stage WavefrontInit $?)
@@ -123,7 +123,7 @@
 			=>
 			(retract ?f0 ?f1)
 			(assert (Create wavefront for ?r containing $?g0 $?g1)))
-
+;------------------------------------------------------------------------------
 (defrule ConvertWavefrontCreationFact
 			(declare (salience 1))
 			(Stage WavefrontInit $?)
@@ -131,27 +131,25 @@
 			=>
 			(retract ?f0)
 			(assert (Create wavefront for ?r containing ?v0)))
-
+;------------------------------------------------------------------------------
 (defrule ConstructInitialWavefront
 			(Stage WavefrontInit $?)
 			?f0 <- (Create wavefront for ?r containing $?w)
 			=>
 			(retract ?f0)
-			(make-instance (gensym*) of Wavefront (Parent ?r) (Contents ?w)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+			(make-instance of Wavefront (Parent ?r) (Contents ?w)))
+;------------------------------------------------------------------------------
 (defrule ConstructPathAggregateForBlock 
 			(declare (salience 100))
 			(Stage WavefrontSchedule $?)
 			(Substage Init $?)
 			(object (is-a Hint) (Type Wavefront) (Parent ?r) (Contents $? ?e $?))
-			?bb <- (object (is-a BasicBlock) (ID ?e)) 
+			?bb <- (object (is-a BasicBlock) (ID ?e) (Contents $?c)) 
 			=>
 			(assert (Propagate aggregates of ?e))
-			(make-instance (gensym*) of PathAggregate (Parent ?e)
-								(OriginalStopIndex (- (length$ (send ?bb get-Contents)) 1))))
-
+			(make-instance of PathAggregate (Parent ?e) (OriginalStopIndex 
+																		(- (length$ $?c) 1))))
+;------------------------------------------------------------------------------
 (defrule ConstructPathAggregateForRegion
 			(declare (salience 100))
 			(Stage WavefrontSchedule $?)
@@ -160,4 +158,5 @@
 			?bb <- (object (is-a Region) (ID ?e)) 
 			=>
 			(assert (Propagate aggregates of ?e))
-			(make-instance (gensym*) of PathAggregate (Parent ?e)))
+			(make-instance of PathAggregate (Parent ?e)))
+;------------------------------------------------------------------------------
