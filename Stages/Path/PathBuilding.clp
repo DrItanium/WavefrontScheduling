@@ -28,53 +28,64 @@
 ; Written by Joshua Scoggins (6/20/2012)
 ;------------------------------------------------------------------------------
 (defrule AddToPath-Copy
-				 "Makes a copy of the current path object and concatenates the symbol in
-				 question to the end of the list. This rule is fired when the reference count
-				 of the given path object is greater than one."
-				 (declare (salience 1))
-				 (Stage Path $?)
-				 ?fct <- (Add ?next to ?id)
-				 ?hint <- (object (is-a Path) (Closed FALSE) (ID ?id) (Parent ?p) (ReferenceCount ?rc&:(> ?rc 1)))
-				 =>
-				 (bind ?newName (gensym*))
-				 (send ?hint .DecrementReferenceCount)
-				 (retract ?fct)
-				 (make-instance ?newName of Path (Parent ?p) 
-												(Contents (send ?hint get-Contents) ?next)))
+			"Makes a copy of the current path object and concatenates the symbol 
+			in question to the end of the list. This rule is fired when the 
+			reference count of the given path object is greater than one."
+			(declare (salience 1))
+			(Stage Path $?)
+			?fct <- (Add ?next to ?id)
+			?hint <- (object (is-a Path) (Closed FALSE) (ID ?id) (Parent ?p) 
+								  (ReferenceCount ?rc&:(> ?rc 1)))
+			=>
+			(bind ?newName (gensym*))
+			(send ?hint .DecrementReferenceCount)
+			(retract ?fct)
+			(make-instance ?newName of Path 
+								(Parent ?p) 
+								(Contents (send ?hint get-Contents) ?next)))
 ;------------------------------------------------------------------------------
 (defrule AddToPath-Concat
-				 "Concatenates the next element of the path directly to the original path
-				 object. This rule fires when the reference count of the path is equal to one"
-				 (declare (salience 1))
-				 (Stage Path $?)
-				 ?fct <- (Add ?next to ?id)
-				 ?hint <- (object (is-a Path) (Closed FALSE) (ID ?id) (ReferenceCount 1))
-				 =>
-				 (retract ?fct)
-				 (modify-instance ?hint (ReferenceCount 0) 
-													(Contents (send ?hint get-Contents) ?next)))
+			"Concatenates the next element of the path directly to the original 
+			path object. This rule fires when the reference count of the path is 
+			equal to one"
+			(declare (salience 1))
+			(Stage Path $?)
+			?fct <- (Add ?next to ?id)
+			?hint <- (object (is-a Path) (Closed FALSE) (ID ?id) 
+								  (ReferenceCount 1))
+			=>
+			(retract ?fct)
+			(modify-instance ?hint 
+								  (ReferenceCount 0) 
+								  (Contents (send ?hint get-Contents) ?next)))
 ;------------------------------------------------------------------------------
 (defrule ClosePath-Update
-				 "Closes a path via an in-place update"
-				 (declare (salience 1))
-				 (Stage Path $?)
-				 ?fct <- (Close ?id with ?bb)
-				 ?hint <- (object (is-a Path) (Closed FALSE) (ID ?id) (ReferenceCount 1))
-				 =>
-				 (retract ?fct)
-				 (modify-instance ?hint (ReferenceCount 0) (Closed TRUE) (ExitBlock ?bb)))
+			"Closes a path via an in-place update"
+			(declare (salience 1))
+			(Stage Path $?)
+			?fct <- (Close ?id with ?bb)
+			?hint <- (object (is-a Path) (Closed FALSE) (ID ?id) 
+								  (ReferenceCount 1))
+			=>
+			(retract ?fct)
+			(modify-instance ?hint 
+								  (ReferenceCount 0) 
+								  (Closed TRUE) 
+								  (ExitBlock ?bb)))
 ;------------------------------------------------------------------------------
 (defrule ClosePath-Copy
-				 "Closes a path by making a copy of the target path"
-				 (declare (salience 1))
-				 (Stage Path $?)
-				 ?fct <- (Close ?id with ?bb)
-				 ?hint <- (object (is-a Path) (Closed FALSE) (ID ?id) (Parent ?p)
-													(ReferenceCount ?rc&:(> ?rc 1)))
-				 =>
-				 (bind ?name (gensym*))
-				 (send ?hint .DecrementReferenceCount)
-				 (retract ?fct)
-				 (make-instance ?name of Path (Closed TRUE) (ExitBlock ?bb) 
-												(Contents (send ?hint get-Contents))))
+			"Closes a path by making a copy of the target path"
+			(declare (salience 1))
+			(Stage Path $?)
+			?fct <- (Close ?id with ?bb)
+			?hint <- (object (is-a Path) (Closed FALSE) (ID ?id) (Parent ?p)
+								  (ReferenceCount ?rc&:(> ?rc 1)))
+			=>
+			(bind ?name (gensym*))
+			(send ?hint .DecrementReferenceCount)
+			(retract ?fct)
+			(make-instance ?name of Path 
+								(Closed TRUE) 
+								(ExitBlock ?bb) 
+								(Contents (send ?hint get-Contents))))
 ;------------------------------------------------------------------------------
