@@ -35,122 +35,124 @@
 ; merging and (by proxy) ordering. 
 ;------------------------------------------------------------------------------
 (defrule ConstructFlatListForRegion
- "Creates a flat representation of the contents of the given region"
- (Stage BuildFlatList $?)
- (object (is-a Region) (ID ?id) (Contents $?z))
- (not (exists (object (is-a Hint) (Type FlatList) (Parent ?id))))
- =>
- (make-instance of Hint (Type FlatList) (Parent ?id)) 
- (assert (Populate FlatList of ?id with $?z)))
+			"Creates a flat representation of the contents of the given region"
+			(Stage BuildFlatList $?)
+			(object (is-a Region) (ID ?id) (Contents $?z))
+			(not (exists (object (is-a Hint) (Type FlatList) (Parent ?id))))
+			=>
+			(make-instance of Hint (Type FlatList) (Parent ?id)) 
+			(assert (Populate FlatList of ?id with $?z)))
 
 (defrule PopulateFlatList-BasicBlock
- (Stage BuildFlatList $?)
- ?f <- (Populate FlatList of ?id with ?first $?rest)
- ?o <- (object (is-a Hint) (Type FlatList) (Parent ?id))
- (object (is-a BasicBlock) (ID ?first))
- =>
- (slot-insert$ ?o Contents 1 ?first)
- (retract ?f)
- (assert (Populate FlatList of ?id with $?rest)))
+			(Stage BuildFlatList $?)
+			?f <- (Populate FlatList of ?id with ?first $?rest)
+			?o <- (object (is-a Hint) (Type FlatList) (Parent ?id))
+			(object (is-a BasicBlock) (ID ?first))
+			=>
+			(slot-insert$ ?o Contents 1 ?first)
+			(retract ?f)
+			(assert (Populate FlatList of ?id with $?rest)))
 
 (defrule PopulateFlatList-Region
- (Stage BuildFlatList $?)
- ?f <- (Populate FlatList of ?id with ?first $?rest)
- ?o <- (object (is-a Hint) (Type FlatList) (Parent ?id))
- (object (is-a Region) (ID ?first))
- (object (is-a Hint) (Type FlatList) (Parent ?first) (ID ?name))
- =>
- ;Add the reference to FlatList for the time being until we have
- ;finished constructing an entire flat list
- (slot-insert$ ?o Contents 1 ?name)
- (retract ?f)
- (assert (Populate FlatList of ?id with $?rest)))
+			(Stage BuildFlatList $?)
+			?f <- (Populate FlatList of ?id with ?first $?rest)
+			?o <- (object (is-a Hint) (Type FlatList) (Parent ?id))
+			(object (is-a Region) (ID ?first))
+			(object (is-a Hint) (Type FlatList) (Parent ?first) (ID ?name))
+			=>
+			;Add the reference to FlatList for the time being until we have
+			;finished constructing an entire flat list
+			(slot-insert$ ?o Contents 1 ?name)
+			(retract ?f)
+			(assert (Populate FlatList of ?id with $?rest)))
 
 (defrule RetractFlatListConstruction
- (Stage BuildFlatList $?)
- ?f <- (Populate FlatList of ? with)
- =>
- (retract ?f))
+			(Stage BuildFlatList $?)
+			?f <- (Populate FlatList of ? with)
+			=>
+			(retract ?f))
 
 (defrule ExpandFlatListEntry
- "Takes a flat list and expands one of the elements of the contents if it turns
- out that element is another flat list"
- (Stage ExpandFlatList $?)
- ?id <- (object (is-a Hint) (Type FlatList) (Contents $?a ?b $?c))
- (object (is-a Hint) (Type FlatList) (ID ?b) (Contents $?j))
- =>
- (modify-instance ?id (Contents $?a $?j $?c)))
+			"Takes a flat list and expands one of the elements of the contents if 
+			it turns out that element is another flat list"
+			(Stage ExpandFlatList $?)
+			?id <- (object (is-a Hint) (Type FlatList) (Contents $?a ?b $?c))
+			(object (is-a Hint) (Type FlatList) (ID ?b) (Contents $?j))
+			=>
+			(modify-instance ?id (Contents $?a $?j $?c)))
 
 (defrule ClaimOwnership
- "Asserts that a region owns another through a subset check. The first flat
- list is checked to see if it is a _proper_ subset of the second"
- (Stage ClaimOwnership $?)
- ?f0 <- (object (is-a Hint) (Type FlatList) (ID ?i0) (Contents $?c0) 
-                (Parent ?p0))
- ?f1 <- (object (is-a Hint) (Type FlatList) (ID ?i1&~?i0) (Contents $?c1)
-                (Parent ?p1))
- (test (and (subsetp ?c0 ?c1) (> (length$ ?c1) (length$ ?c0))))
- =>
- (assert (claim ?p1 owns ?p0)))
+			"Asserts that a region owns another through a subset check. The first 
+			flat list is checked to see if it is a _proper_ subset of the second"
+			(Stage ClaimOwnership $?)
+			?f0 <- (object (is-a Hint) (Type FlatList) (ID ?i0) (Contents $?c0) 
+								(Parent ?p0))
+			?f1 <- (object (is-a Hint) (Type FlatList) (ID ?i1&~?i0) 
+								(Contents $?c1) (Parent ?p1))
+			(test (and (subsetp ?c0 ?c1) (> (length$ ?c1) (length$ ?c0))))
+			=>
+			(assert (claim ?p1 owns ?p0)))
 
 (defrule ClaimOwnershipOfBlocks
- "This rule is used to assert ownership claims on basic blocks"
- (Stage ClaimOwnership $?)
- ?f0 <- (object (is-a Hint) (Type FlatList) (Parent ?p) (Contents $? ?b $?))
- (object (is-a BasicBlock) (ID ?b))
- =>
- (assert (claim ?p owns ?b)))
+			"This rule is used to assert ownership claims on basic blocks"
+			(Stage ClaimOwnership $?)
+			?f0 <- (object (is-a Hint) (Type FlatList) (Parent ?p) 
+								(Contents $? ?b $?))
+			(object (is-a BasicBlock) (ID ?b))
+			=>
+			(assert (claim ?p owns ?b)))
 
 (defrule ClaimEquivalence
- "Asserts that two regions are equivalent if one flat list contains the same
- elements as a second one."
- (Stage ClaimOwnership $?)
- ?f0 <- (object (is-a Hint) (Type FlatList) (ID ?i0) (Contents $?c0)
-                (Parent ?p0))
- ?f1 <- (object (is-a Hint) (Type FlatList) (ID ?i1&~?i0) (Contents $?c1)
-                (Parent ?p1))
- (test (and (subsetp ?c0 ?c1) (= (length$ ?c1) (length$ ?c0))))
- =>
- (assert (claim ?p1 equivalent ?p0)))
+			"Asserts that two regions are equivalent if one flat list contains the
+			same elements as a second one."
+			(Stage ClaimOwnership $?)
+			?f0 <- (object (is-a Hint) (Type FlatList) (ID ?i0) (Contents $?c0)
+								(Parent ?p0))
+			?f1 <- (object (is-a Hint) (Type FlatList) (ID ?i1&~?i0) 
+								(Contents $?c1) (Parent ?p1))
+			(test (and (subsetp ?c0 ?c1) (= (length$ ?c1) (length$ ?c0))))
+			=>
+			(assert (claim ?p1 equivalent ?p0)))
 
 
 (defrule MergeClaimsOfEquivalence
- "It is possible for two facts of equivalence to actually be the same fact"
- (declare (salience -1))
- (Stage ClaimOwnership $?)
- ?f0 <- (claim ?a equivalent ?b)
- ?f1 <- (claim ?b equivalent ?a)
- =>
- (retract ?f0 ?f1)
- (assert (claim ?a equivalent ?b)))
+			"It is possible for two facts of equivalence to actually be the same 
+			fact"
+			(declare (salience -1))
+			(Stage ClaimOwnership $?)
+			?f0 <- (claim ?a equivalent ?b)
+			?f1 <- (claim ?b equivalent ?a)
+			=>
+			(retract ?f0 ?f1)
+			(assert (claim ?a equivalent ?b)))
 
 (defrule EliminateEquivalences-LoopFirst
- "If we find an equivalence then it means that a loop and a region contain the
- same elements. Therefore the loop persists and the region dies. The loop is
- the first entry."
- (declare (salience 1))
- (Stage Arbitrate $?)
- ?f0 <- (claim ?a equivalent ?b)
- (object (is-a Loop) (ID ?a))
- (object (is-a Region&~Loop) (ID ?b))
- =>
- (retract ?f0)
- (assert (delete region ?b)
-         (replace ?b with ?a)))
+			"If we find an equivalence then it means that a loop and a region 
+			contain the same elements. Therefore the loop persists and the region 
+			dies. The loop is the first entry."
+			(declare (salience 1))
+			(Stage Arbitrate $?)
+			?f0 <- (claim ?a equivalent ?b)
+			(object (is-a Loop) (ID ?a))
+			(object (is-a Region&~Loop) (ID ?b))
+			=>
+			(retract ?f0)
+			(assert (delete region ?b)
+					  (replace ?b with ?a)))
 
 (defrule EliminateEquivalences-LoopSecond
- "If we find an equivalence then it means that a loop and a region contain the
- same elements. Therefore the loop persists and the region dies. The loop is
- the second entry."
- (declare (salience 1))
- (Stage Arbitrate $?)
- ?f0 <- (claim ?b equivalent ?a)
- (object (is-a Loop) (ID ?a))
- (object (is-a Region&~Loop) (ID ?b))
- =>
- (retract ?f0)
- (assert (delete region ?b)
-         (replace ?b with ?a)))
+			"If we find an equivalence then it means that a loop and a region 
+			contain the same elements. Therefore the loop persists and the region
+			dies. The loop is the second entry."
+			(declare (salience 1))
+			(Stage Arbitrate $?)
+			?f0 <- (claim ?b equivalent ?a)
+			(object (is-a Loop) (ID ?a))
+			(object (is-a Region&~Loop) (ID ?b))
+			=>
+			(retract ?f0)
+			(assert (delete region ?b)
+					  (replace ?b with ?a)))
 
 ; Now that we have asserted delete and replacement claims it's necessary to
 ; carry those claims out. First, we need to do the replacement actions
@@ -163,67 +165,49 @@
 ; Then we go through and perform partial replacement on the flat lists 
 
 (defrule RemoveStaleClaims-DeletionTargetClaimsAnother
- "We target claims of ownership that deal with a given region that has to be
- replaced by another due to equivalence"
- (declare (salience 1))
- (Stage ResolveClaims $?)
- ?f0 <- (replace ?old with ?new)
- ?f1 <- (claim ?old owns ?other)
- =>
- (retract ?f0 ?f1)
- (assert (claim ?new owns ?other)
-         (replace ?old with ?new)))
+			"We target claims of ownership that deal with a given region that has 
+			to be replaced by another due to equivalence"
+			(declare (salience 1))
+			(Stage ResolveClaims $?)
+			?f0 <- (replace ?old with ?new)
+			?f1 <- (claim ?old owns ?other)
+			=>
+			(retract ?f0 ?f1)
+			(assert (claim ?new owns ?other)
+					  (replace ?old with ?new)))
 
 (defrule RemoveStaleClaims-AnotherClaimsDeletionTarget
- (declare (salience 1))
- (Stage ResolveClaims $?)
- ?f0 <- (replace ?old with ?new)
- ?f1 <- (claim ?other owns ?old)
- =>
- (retract ?f0 ?f1)
- (assert (claim ?other owns ?new)
-         (replace ?old with ?new)))
+			(declare (salience 1))
+			(Stage ResolveClaims $?)
+			?f0 <- (replace ?old with ?new)
+			?f1 <- (claim ?other owns ?old)
+			=>
+			(retract ?f0 ?f1)
+			(assert (claim ?other owns ?new)
+					  (replace ?old with ?new)))
 
 (defrule RemoveStaleClaims-NoMoreConvergence
- "Retract replacement facts because there are no more claims to worry about"
- (Stage ResolveClaims $?)
- ?f0 <- (replace ?old with ?new)
- =>
- (retract ?f0))
+			"Retract replacement facts because there are no more claims to worry 
+			about"
+			(Stage ResolveClaims $?)
+			?f0 <- (replace ?old with ?new)
+			=>
+			(retract ?f0))
 
 (defrule DeleteTargetRegion
- "Deletes the target region slated for deletion"
- (Stage ResolveClaims $?)
- ?f0 <- (delete region ?r0)
- ?region <- (object (is-a Region) (ID ?r0))
- =>
- (retract ?f0)
- (unmake-instance ?region))
+			"Deletes the target region slated for deletion"
+			(Stage ResolveClaims $?)
+			?f0 <- (delete region ?r0)
+			?region <- (object (is-a Region) (ID ?r0))
+			=>
+			(retract ?f0)
+			(unmake-instance ?region))
 
-;Now we have a set of ownership clauses 
-;(defrule PrintoutFacts
-; (Stage Fixup $?)
-; =>
-; (facts))
-
-
-;TODO: Add rules to handle cases where final ownership has been determined to
-;      be such that nothing needs to change (r0 owns r1 and r0 contains r1 or
-;      l0 owns l1 and l0 contains l1)
-
-(defrule PrintoutResults
- (Silence)
- (Stage Fixup $?)
- ?id <- (object (is-a Hint) (Type FlatList))
- =>
- (printout t "==================" crlf)
- (send ?id print))
 
 (defrule DeleteFlatLists 
- "Deletes all of the flat lists in a single rule fire"
- (Stage CleanUp-Merger $?)
- ;?fl <- (object (is-a Hint) (Type FlatList))
- =>
- ;(printout t "Deleted all flat lists" crlf)
- (progn$ (?fl (find-all-instances ((?list Hint)) (eq ?list:Type FlatList))) 
-  (unmake-instance ?fl)))
+			"Deletes all of the flat lists in a single rule fire"
+			(Stage CleanUp-Merger $?)
+			=>
+			(progn$ (?fl (find-all-instances ((?list Hint)) ;where 
+														(eq ?list:Type FlatList))) 
+					  (unmake-instance ?fl)))
