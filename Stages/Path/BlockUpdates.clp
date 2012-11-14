@@ -48,7 +48,7 @@
 			(Stage Path $?)
 			(object (is-a Path) (Closed TRUE) (ID ?i) (Contents $? ?b $?))
 			?d <- (object (is-a Diplomat) (ID ?b))
-			(test (eq FALSE (member$ ?i (send ?d get-Paths))))
+			(test (not (member$ ?i (send ?d get-Paths))))
 			=>
 			(slot-insert$ ?d Paths 1 ?i))
 
@@ -58,7 +58,7 @@
 			?o0 <- (object (is-a Diplomat) (ID ?a))
 			?o1 <- (object (is-a Diplomat) (ID ?b))
 			=>
-			(if (eq FALSE (member$ ?a (send ?o1 get-PreviousPathElements))) then
+			(if (not (member$ ?a (send ?o1 get-PreviousPathElements))) then
 			  (slot-insert$ ?o1 PreviousPathElements 1 ?a))
-			(if (eq FALSE (member$ ?b (send ?o0 get-NextPathElements))) then
+			(if (not (member$ ?b (send ?o0 get-NextPathElements))) then
 			  (slot-insert$ ?o0 NextPathElements 1 ?b)))
