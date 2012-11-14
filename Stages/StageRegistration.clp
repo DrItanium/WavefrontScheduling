@@ -25,59 +25,54 @@
 ;------------------------------------------------------------------------------
 ; Defines the series that the expert system will execute through on invocation
 ; It works through a fact definition structure
-
+;------------------------------------------------------------------------------
 (defrule first-rule-has-loops
- (declare (salience 10000))
- (initial-fact)
- (exists (object (is-a Loop)))
- =>
- (assert (Stage 
-          BuildFlatList
-          ExpandFlatList
-          ClaimOwnership
-          Arbitrate
-          ResolveClaims
-          DeterminantConstruction
-          DeterminantPopulation
-          DeterminantResolution
-          DeterminantIndirectResolution
-          Fixup 
-					FixupUpdate
-					FixupRename
-          CleanUp-Merger
-          ModificationPropagation
-          Analysis 
-          ExtendedMemoryAnalysis
-          Path
-			 PathUpdate
-          WavefrontInit
-          WavefrontSchedule
-			 WavefrontFinal
-          Final)))
-
+			(declare (salience 10000))
+			(initial-fact)
+			(exists (object (is-a Loop)))
+			=>
+			(assert (Stage BuildFlatList
+								ExpandFlatList
+								ClaimOwnership
+								Arbitrate
+								ResolveClaims
+								DeterminantConstruction
+								DeterminantPopulation
+								DeterminantResolution
+								DeterminantIndirectResolution
+								Fixup 
+								FixupUpdate
+								FixupRename
+								CleanUp-Merger
+								ModificationPropagation
+								Analysis 
+								ExtendedMemoryAnalysis
+								Path
+								PathUpdate
+								WavefrontInit
+								WavefrontSchedule
+								WavefrontFinal
+								Final)))
+;------------------------------------------------------------------------------
 (defrule first-rule-no-loops 
- (declare (salience 10000))
- (initial-fact)
- (not (exists (object (is-a Loop))))
- =>
- (assert (Stage 
-          ModificationPropagation
-          Analysis 
-          ExtendedMemoryAnalysis
-          Path
-			    PathUpdate
-          WavefrontInit
-          WavefrontSchedule
-			    WavefrontFinal
-          Final)))
-
-
+			(declare (salience 10000))
+			(initial-fact)
+			(not (exists (object (is-a Loop))))
+			=>
+			(assert (Stage ModificationPropagation
+								Analysis 
+								ExtendedMemoryAnalysis
+								Path
+								PathUpdate
+								WavefrontInit
+								WavefrontSchedule
+								WavefrontFinal
+								Final)))
+;------------------------------------------------------------------------------
 (defrule change-stage
- (declare (salience -10000))
- ?fct <- (Stage ? $?rest)
- =>
- (retract ?fct)
- (assert (Stage $?rest)))
- 
-
-
+			(declare (salience -10000))
+			?fct <- (Stage ? $?rest)
+			=>
+			(retract ?fct)
+			(assert (Stage $?rest)))
+;------------------------------------------------------------------------------
