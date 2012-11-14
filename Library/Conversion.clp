@@ -29,7 +29,7 @@
 				 pointer value out of it. This function assumes order is important"
 				 (?list)
 				 (bind ?result (create$))
-				 (foreach ?e ?list
+				 (progn$ (?e ?list)
 							 (bind ?obj (symbol-to-instance-name ?e))
 							 (bind ?result (create$ ?result (send ?obj get-Pointer))))
 				 (return ?result))
