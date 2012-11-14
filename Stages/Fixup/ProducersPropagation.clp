@@ -24,7 +24,6 @@
 ;SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (defrule PropagateBlockProducers
-				 (declare (salience 100))
 				 (Stage ModificationPropagation $?)
 				 (object (is-a BasicBlock) (ID ?b) (Parent ?r) 
 								 (Produces $?produces))
@@ -32,7 +31,6 @@
 				 (assert (Give ?r from ?b the following produced items $?produces)))
 
 (defrule PropagateRegionProducers-ParentExists
-				 (declare (salience 50))
 				 (Stage ModificationPropagation $?)
 				 ?fct <- (Give ?r from ? the following produced items $?produced)
 				 ?region <- (object (is-a Region) (ID ?r) (Parent ?p))
@@ -43,7 +41,6 @@
 				 (slot-insert$ ?region Produces 1 ?produced))
 
 (defrule PropagateRegionProducers-ParentDoesntExist
-				 (declare (salience 50))
 				 (Stage ModificationPropagation $?)
 				 ?fct <- (Give ?r from ? the following produced items $?produced)
 				 ?region <- (object (is-a Region) (ID ?r) (Parent ?p))
