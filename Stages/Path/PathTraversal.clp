@@ -36,7 +36,7 @@
 			(object (is-a BasicBlock) (ID ?curr) (Parent ?p) 
 					  (Successors $? ?next $?))
 			(object (is-a BasicBlock) (ID ?next) (Parent ?p))
-			(text (not (member$ ?next (create$? before ?curr))))
+			(test (not (member$ ?next (create$? before ?curr))))
 			=>
 			(send ?path .IncrementReferenceCount)
 			(assert (Add ?next to ?id)))
