@@ -34,16 +34,17 @@
 			(object (is-a Wavefront) (Parent ?r) (Contents $? ?e $?))
 			(object (is-a Diplomat) (ID ?e) (IsOpen TRUE))
 			?agObj <- (object (is-a PathAggregate) (Parent ?e) 
-									(MovableCompensationPathVectors ?cpv $?)) 
-			;TODO: Rewrite this rule to assert all facts in a single rule fire
+									(MovableCompensationPathVectors $?cpvs)) 
 			=>
-			(slot-delete$ ?agObj MovableCompensationPathVectors 1 1)
-			(assert (Determine schedule style for ?cpv into block ?e)))
+			(if (> (length$ $?cpvs) 0) then
+			  (modify-instance ?agObj (MovableCompensationPathVectors)))
+			(progn$ (?cpv $?cpvs)
+					  (assert (Determine schedule style for ?cpv into block ?e))))
 ;------------------------------------------------------------------------------
 (defrule ScheduleStyleForCPVIsMove
-			"This rule attempts to determine if the CPV should be moved into the given
-			block on the wavefront. If this is true then the fact to perform this action
-			will be asserted"
+			"This rule attempts to determine if the CPV should be moved into the 
+			given block on the wavefront. If this is true then the fact to perform 
+			this action will be asserted"
 			(Stage WavefrontSchedule $?)
 			(Substage Merge $?)
 			?fct <- (Determine schedule style for ?cpv into block ?e)
@@ -57,9 +58,9 @@
 			(assert (Move ?cpv into ?e)))
 ;------------------------------------------------------------------------------
 (defrule ScheduleStyleForCPVIsCompensate
-			"This rule attempts to determine if the CPV should be copied into the given
-			block on the wavefront. If this is true then the fact to perform this action
-			will be asserted."
+			"This rule attempts to determine if the CPV should be copied into the 
+			given block on the wavefront. If this is true then the fact to perform 
+			this action will be asserted."
 			(Stage WavefrontSchedule $?)
 			(Substage Merge $?)
 			?fct <- (Determine schedule style for ?cpv into block ?e)
