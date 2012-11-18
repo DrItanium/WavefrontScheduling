@@ -25,3 +25,4 @@
 (load* "Stages/Analysis/FrequencyAnalysis.clp")
 (load* "Stages/Analysis/BlockDependencyCreation.clp")
 (load* "Stages/Analysis/MemoryBarrierCreation.clp")
+(load* "Stages/Analysis/MergeRules.clp")
