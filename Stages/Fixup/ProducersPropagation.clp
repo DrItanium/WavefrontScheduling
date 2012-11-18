@@ -54,7 +54,7 @@
 			?i0 <- (object (is-a Instruction) (Parent ?p) (ID ?t0) 
 								(Operands $? ?op $?))
 			(object (is-a TaggedObject) (ID ?op) (Parent ~?p))
-			(test (not (member$ ?op (send ?i0 get-NonLocalDependencies))))
+			;(test (not (member$ ?op (send ?i0 get-NonLocalDependencies))))
 			=>
 			;since we don't copy the set of producers at the start anymore we
 			;need this operation as well
