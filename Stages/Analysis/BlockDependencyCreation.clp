@@ -33,6 +33,8 @@
                         (Operands $? ?o $?))
          (object (is-a Instruction) (ID ?o) (Parent ?p))
          =>
+         ;mark as a local dependency here
+         (slot-insert$ ?i0 LocalDependencies 1 ?o)
          (assert (Instruction ?o produces ?t0)
                  (Instruction ?t0 consumes ?o)))
 ;------------------------------------------------------------------------------
@@ -161,7 +163,6 @@
 ;------------------------------------------------------------------------------
 (defrule ExtendedInjectConsumers
          "Adds a given consumer to the target instruction"
-         ;(declare (salience -5))
          (Stage ExtendedMemoryAnalysis-Inject $?)
          ?fct <- (Instruction ?id is consumed by $?targets)
          ?inst <- (object (is-a Instruction) (ID ?id) (Consumers $?cs))
@@ -175,22 +176,16 @@
 ;------------------------------------------------------------------------------
 (defrule ExtendedInjectProducers
          "Adds a given producer to the target instruction"
-         ;(declare (salience -5))
          (Stage ExtendedMemoryAnalysis-Inject $?)
          ?fct <- (Instruction ?id is produced by $?targets)
-         ?inst <- (object (is-a Instruction) (ID ?id)
-                          (Producers $?ps) (LocalDependencies $?locs))
+         ?inst <- (object (is-a Instruction) (ID ?id) (Producers $?ps))
          =>
          (retract ?fct)
          (bind ?prods $?ps)
-         (bind ?locdep $?locs)
          (progn$ (?target ?targets)
                  (if (not (member$ ?target ?prods)) then
-                   (bind ?prods (insert$ ?prods 1 ?target)))
-                 (if (not (member$ ?target ?locdep)) then
-                   (bind ?locdep (insert$ ?locdep 1 ?target))))
-         (modify-instance ?inst (LocalDependencies ?locdep) 
-                          (Producers ?prods)))
+                   (bind ?prods (insert$ ?prods 1 ?target))))
+         (modify-instance ?inst (Producers ?prods)))
 ;------------------------------------------------------------------------------
 (defrule StoreToLoadDependency
          (Stage ExtendedMemoryAnalysis $?)
@@ -303,4 +298,12 @@
                           (LocalDependencies $?a ?b $?c ?b $?d))
          =>
          (modify-instance ?inst (LocalDependencies $?a ?b $?c $?d)))
+;------------------------------------------------------------------------------
+(defrule SetifyNonLocalDependencies-Extended
+         (declare (salience -11))
+         (Stage ExtendedMemoryAnalysis-MakeSet $?)
+         ?inst <- (object (is-a Instruction) 
+                          (NonLocalDependencies $?a ?b $?c ?b $?d))
+         =>
+         (modify-instance ?inst (NonLocalDependencies $?a ?b $?c $?d)))
 ;------------------------------------------------------------------------------
