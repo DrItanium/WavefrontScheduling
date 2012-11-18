@@ -26,122 +26,85 @@
 ; MergeRules.clp - Contains all of the merge rules used in the analysis stages
 ; Written by Joshua Scoggins (11/18/2012)
 ;------------------------------------------------------------------------------
-(defrule MergeConsumers-Extended
-         ;(declare (salience -2))
+(defrule MergeConsumers
          (Stage ExtendedMemoryAnalysis-Merge $?)
          ?f0 <- (Instruction ?a consumes ?id)
-         ?f1 <- (Instruction ?b consumes ?id)
-         (test (neq ?f0 ?f1))
+         ?f1 <- (Instruction ?b&~?a consumes ?id)
          =>
          (retract ?f0 ?f1)
-         (assert (Instruction ?id is consumed by ?a ?b)))
+         (assert (Instruction ?id consumed ?a ?b)))
 ;------------------------------------------------------------------------------
-(defrule MergeProducers-Extended
-         ;(declare (salience -2))
+(defrule MergeProducers
          (Stage ExtendedMemoryAnalysis-Merge $?)
          ?f0 <- (Instruction ?a produces ?id)
-         ?f1 <- (Instruction ?b produces ?id)
+         ?f1 <- (Instruction ?b&~?a produces ?id)
+         =>
+         (retract ?f0 ?f1)
+         (assert (Instruction ?id produced ?a ?b)))
+;------------------------------------------------------------------------------
+(defrule MergeConsumers-Multi
+         (Stage ExtendedMemoryAnalysis-Merge $?)
+         ?f0 <- (Instruction ?id consumed $?a)
+         ?f1 <- (Instruction ?id consumed $?b)
          (test (neq ?f0 ?f1))
          =>
          (retract ?f0 ?f1)
-         (assert (Instruction ?id is produced by ?a ?b)))
+         (assert (Instruction ?id consumed $?a $?b)))
 ;------------------------------------------------------------------------------
-(defrule MergeConsumers-Multi-Extended
-         ;(declare (salience -2))
+(defrule MergeProducers-Multi
          (Stage ExtendedMemoryAnalysis-Merge $?)
-         ?f0 <- (Instruction ?id is consumed by $?a)
-         ?f1 <- (Instruction ?id is consumed by $?b)
+         ?f0 <- (Instruction ?id produced $?a)
+         ?f1 <- (Instruction ?id produced $?b)
          (test (neq ?f0 ?f1))
          =>
          (retract ?f0 ?f1)
-         (assert (Instruction ?id is consumed by $?a $?b)))
+         (assert (Instruction ?id produced $?a $?b)))
 ;------------------------------------------------------------------------------
-(defrule MergeProducers-Multi-Extended
-         ;(declare (salience -2))
-         (Stage ExtendedMemoryAnalysis-Merge $?)
-         ?f0 <- (Instruction ?id is produced by $?a)
-         ?f1 <- (Instruction ?id is produced by $?b)
-         (test (neq ?f0 ?f1))
-         =>
-         (retract ?f0 ?f1)
-         (assert (Instruction ?id is produced by $?a $?b)))
-;------------------------------------------------------------------------------
-(defrule MergeLocalDependencies-Single
-         (Stage ExtendedMemoryAnalysis-Merge $?)
-         ?f0 <- (Add local dependency ?a to ?c)
-         ?f1 <- (Add local dependency ?b to ?c)
-         (test (neq ?f0 ?f1))
-         =>
-         (retract ?f0 ?f1)
-         (assert (Into ?c add local dependency ?a ?b)))
-;------------------------------------------------------------------------------
-(defrule MergeLocalDependencies-Multi
-         (Stage ExtendedMemoryAnalysis-Merge $?)
-         ?f0 <- (Into ?a add local dependency $?b)
-         ?f1 <- (Into ?a add local dependency $?c)
-         (test (neq ?f0 ?f1))
-         =>
-         (retract ?f0 ?f1)
-         (assert (Into ?a add local dependency $?b $?c)))
-;------------------------------------------------------------------------------
-(defrule MergeLocalDependencies-Only
-         (declare (salience -1))
-         (Stage ExtendedMemoryAnalysis-Merge $?)
-         ?f0 <- (Add local dependency ?a to ?c)
-         =>
-         (retract ?f0)
-         (assert (Into ?c add local dependency ?a)))
-;------------------------------------------------------------------------------
-(defrule MergeConsumers-Only-Extended
-         (declare (salience -1))
+(defrule MergeConsumers-Only
+         (declare (salience -2))
          (Stage ExtendedMemoryAnalysis-Merge $?)
          ?f0 <- (Instruction ?a consumes ?b)
          =>
          (retract ?f0)
-         (assert (Instruction ?b is consumed by ?a)))
+         (assert (Instruction ?b consumed ?a)))
 ;------------------------------------------------------------------------------
-(defrule MergeProducers-Only-Extended
-         (declare (salience -1))
+(defrule MergeProducers-Only
+         (declare (salience -2))
          (Stage ExtendedMemoryAnalysis-Merge $?)
          ?f0 <- (Instruction ?a produces ?b)
          =>
          (retract ?f0)
-         (assert (Instruction ?b is produced by ?a)))
+         (assert (Instruction ?b produced ?a)))
 ;------------------------------------------------------------------------------
-(defrule SetifyInstructionProducers-Extended
-         (declare (salience -11))
-         (Stage ExtendedMemoryAnalysis-MakeSet $?)
-         ?inst <- (object (is-a Instruction) (Producers $?a ?b $?c ?b $?d))
+(defrule InjectConsumers-Producers-And-LocalDependencies
+         "Performs the actions of InjectConsumers and
+         InjectProducersAndLocalDependencies in a single rule fire."
+         (declare (salience 1))
+         (Stage ExtendedMemoryAnalysis-Inject $?)
+         ?f0 <- (Instruction ?id consumed $?t0)
+         ?f1 <- (Instruction ?id produced $?t1)
+         ?inst <- (object (is-a Instruction) (ID ?id) (Consumers $?c) 
+                          (Producers $?p) (LocalDependencies $?ld))
          =>
-         (modify-instance ?inst (Producers $?a ?b $?c $?d)))
+         (retract ?f0 ?f1)
+         (bind ?cs $?c)
+         (bind ?ps $?p)
+         (bind ?lds $?ld)
+         (progn$ (?target ?t0)
+                 (if (not (member$ ?target ?cs)) then
+                   (bind ?cs (insert$ ?cs 1 ?target))))
+         (progn$ (?target ?t1)
+                 (if (not (member$ ?target ?lds)) then
+                   (bind ?lds (insert$ ?lds 1 ?target)))
+                 (if (not (member$ ?target ?ps)) then
+                   (bind ?ps (insert$ ?ps 1 ?target))))
+         (modify-instance ?inst (Consumers ?cs) (Producers ?ps) 
+                          (LocalDependencies ?lds)))
 ;------------------------------------------------------------------------------
-(defrule SetifyInstructionConsumers-Extended
-         (declare (salience -11))
-         (Stage ExtendedMemoryAnalysis-MakeSet $?)
-         ?inst <- (object (is-a Instruction) (Consumers $?a ?b $?c ?b $?d))
-         =>
-         (modify-instance ?inst (Consumers $?a ?b $?c $?d)))
-;------------------------------------------------------------------------------
-(defrule SetifyLocalDependencies-Extended
-         (declare (salience -11))
-         (Stage ExtendedMemoryAnalysis-MakeSet $?)
-         ?inst <- (object (is-a Instruction) 
-                          (LocalDependencies $?a ?b $?c ?b $?d))
-         =>
-         (modify-instance ?inst (LocalDependencies $?a ?b $?c $?d)))
-;------------------------------------------------------------------------------
-(defrule SetifyNonLocalDependencies-Extended
-         (declare (salience -11))
-         (Stage ExtendedMemoryAnalysis-MakeSet $?)
-         ?inst <- (object (is-a Instruction) 
-                          (NonLocalDependencies $?a ?b $?c ?b $?d))
-         =>
-         (modify-instance ?inst (NonLocalDependencies $?a ?b $?c $?d)))
-;------------------------------------------------------------------------------
-(defrule ExtendedInjectConsumers
+(defrule InjectConsumers
          "Adds a given consumer to the target instruction"
          (Stage ExtendedMemoryAnalysis-Inject $?)
-         ?fct <- (Instruction ?id is consumed by $?targets)
+         ?fct <- (Instruction ?id consumed $?targets)
          ?inst <- (object (is-a Instruction) (ID ?id) (Consumers $?cs))
          =>
          (retract ?fct)
@@ -151,30 +114,46 @@
                    (bind ?cons (insert$ ?cons 1 ?target))))
          (modify-instance ?inst (Consumers ?cons)))
 ;------------------------------------------------------------------------------
-(defrule ExtendedInjectProducers
-         "Adds a given producer to the target instruction"
+(defrule InjectProducersAndLocalDependencies
+         "Adds a given producer to the target instruction."
          (Stage ExtendedMemoryAnalysis-Inject $?)
-         ?fct <- (Instruction ?id is produced by $?targets)
-         ?inst <- (object (is-a Instruction) (ID ?id) (Producers $?ps))
+         ?fct <- (Instruction ?id produced $?targets)
+         ?inst <- (object (is-a Instruction) (ID ?id) (Producers $?ps)
+                          (LocalDependencies $?ld))
          =>
          (retract ?fct)
          (bind ?prods $?ps)
+         (bind ?lds $?ld)
          (progn$ (?target ?targets)
+                 (if (not (member$ ?target ?lds)) then
+                   (bind ?lds (insert$ ?lds 1 ?target)))
                  (if (not (member$ ?target ?prods)) then
                    (bind ?prods (insert$ ?prods 1 ?target))))
-         (modify-instance ?inst (Producers ?prods)))
+         (modify-instance ?inst (Producers ?prods) (LocalDependencies ?lds)))
 ;------------------------------------------------------------------------------
-(defrule InjectLocalDependencies
-         "Adds a local dependency based on a given fact"
-         (Stage ExtendedMemoryAnalysis-Inject $?)
-         ?fct <- (Into ?a add local dependency $?targets)
-         ;?fct <- (Add local dependency ?a to ?b)
-         ?i <- (object (is-a Instruction) (ID ?a) (LocalDependencies $?ld))
+(defrule SetifyInstructionProducers
+         (Stage ExtendedMemoryAnalysis-MakeSet $?)
+         ?inst <- (object (is-a Instruction) (Producers $?a ?b $?c ?b $?d))
          =>
-         (retract ?fct)
-         (bind ?result $?ld)
-         (progn$ (?target ?targets)
-          (if (not (member$ ?target ?result)) then
-           (bind ?result (insert$ ?result 1 ?target))))
-         (modify-instance ?i (LocalDependencies ?result)))
+         (modify-instance ?inst (Producers $?a ?b $?c $?d)))
+;------------------------------------------------------------------------------
+(defrule SetifyInstructionConsumers
+         (Stage ExtendedMemoryAnalysis-MakeSet $?)
+         ?inst <- (object (is-a Instruction) (Consumers $?a ?b $?c ?b $?d))
+         =>
+         (modify-instance ?inst (Consumers $?a ?b $?c $?d)))
+;------------------------------------------------------------------------------
+(defrule SetifyLocalDependencies
+         (Stage ExtendedMemoryAnalysis-MakeSet $?)
+         ?inst <- (object (is-a Instruction) 
+                          (LocalDependencies $?a ?b $?c ?b $?d))
+         =>
+         (modify-instance ?inst (LocalDependencies $?a ?b $?c $?d)))
+;------------------------------------------------------------------------------
+(defrule SetifyNonLocalDependencies
+         (Stage ExtendedMemoryAnalysis-MakeSet $?)
+         ?inst <- (object (is-a Instruction) 
+                          (NonLocalDependencies $?a ?b $?c ?b $?d))
+         =>
+         (modify-instance ?inst (NonLocalDependencies $?a ?b $?c $?d)))
 ;------------------------------------------------------------------------------

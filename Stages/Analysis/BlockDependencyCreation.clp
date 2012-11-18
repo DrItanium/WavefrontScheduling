@@ -33,10 +33,7 @@
                         (Operands $? ?o $?))
          (object (is-a Instruction) (ID ?o) (Parent ?p))
          =>
-         ;mark as a local dependency here
-         ;(slot-insert$ ?i0 LocalDependencies 1 ?o)
          (assert (Instruction ?o produces ?t0)
-                 (Add local dependency ?o to ?t0)
                  (Instruction ?t0 consumes ?o)))
 ;------------------------------------------------------------------------------
 (defrule MarkInstructionsThatHappenBeforeCall-WritesToMemory
@@ -47,7 +44,6 @@
          =>
          (progn$ (?n1 ?before)
                  (assert (Instruction ?n0 consumes ?n1)
-                         (Add local dependency ?n1 to ?n0)
                          (Instruction ?n1 produces ?n0))))
 ;------------------------------------------------------------------------------
 (defrule MarkInstructionsThatHappenBeforeCall-HasSideEffects
@@ -58,7 +54,6 @@
          =>
          (progn$ (?n1 ?a)
                  (assert (Instruction ?n0 consumes ?n1)
-                         (Add local dependency ?n1 to ?n0)
                          (Instruction ?n1 produces ?n0))))
 ;------------------------------------------------------------------------------
 (defrule MarkCallInstructionDependency-ModifiesMemory
@@ -72,7 +67,6 @@
          (assert (Element ?p has a CallBarrier))
          (progn$ (?following ?rest)
                  (assert (Instruction ?following has a CallDependency)
-                         (Add local dependency ?name to ?following)
                          ;(Instruction ?following consumes ?name)
                          (Instruction ?name produces ?following))))
 ;------------------------------------------------------------------------------
@@ -87,7 +81,6 @@
          (assert (Element ?p has a CallBarrier))
          (progn$ (?following ?rest)
                  (assert (Instruction ?following has a CallDependency)
-                         (Add local dependency ?name to ?following)
                          ;(Instruction ?following consumes ?name)
                          (Instruction ?name produces ?following))))
 ;------------------------------------------------------------------------------
@@ -102,7 +95,6 @@
          (assert (Element ?p has a CallBarrier))
          (progn$ (?following ?rest)
                  (assert (Instruction ?following has a CallDependency)
-                         (Add local dependency ?name to ?following)
                          ;(Instruction ?following consumes ?name)
                          (Instruction ?name produces ?following))))
 ;------------------------------------------------------------------------------
@@ -176,7 +168,6 @@
          (test (or (eq ?sym0 ?sym1) (eq ?sym0 UNKNOWN)))
          =>
          (assert (Instruction ?t1 consumes ?t0)
-                 (Add local dependency ?t0 to ?t1)
                  (Instruction ?t0 produces ?t1)))
 ;------------------------------------------------------------------------------
 (defrule StoreToStoreDependency
@@ -188,7 +179,6 @@
          (test (or (eq ?sym0 ?sym1) (eq ?sym0 UNKNOWN)))
          =>
          (assert (Instruction ?t1 consumes ?t0)
-                 (Add local dependency ?t0 to ?t1)
                  (Instruction ?t0 produces ?t1)))
 ;------------------------------------------------------------------------------
 (defrule LoadToStoreDependency
@@ -200,6 +190,5 @@
          (test (or (eq ?sym0 ?sym1) (eq ?sym0 UNKNOWN)))
          =>
          (assert (Instruction ?t1 consumes ?t0)
-                 (Add local dependency ?t0 to ?t1)
                  (Instruction ?t0 produces ?t1)))
 ;------------------------------------------------------------------------------
