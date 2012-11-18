@@ -28,38 +28,39 @@
 ; Written by Joshua Scoggins (6/30/2012) 
 ;------------------------------------------------------------------------------
 (defrule InstanceFrequencyCounter
-			"Creates a frequency counter hint for basic blocks"
-			(declare (salience 220))
-			(Stage Analysis $?)
-			(object (is-a Region) (Class Region) (ID ?p) 
-					  (CanWavefrontSchedule FALSE))
-			=>
-			(make-instance of FrequencyAnalysis (Parent ?p)))
+         "Creates a frequency counter hint for basic blocks"
+         (declare (salience 2))
+         (Stage FrequencyAnalysis $?)
+         (object (is-a Region) (Class Region) (ID ?p) 
+                 (CanWavefrontSchedule FALSE))
+         (not (exists (object (is-a FrequencyAnalysis) (Parent ?p))))
+         =>
+         (make-instance of FrequencyAnalysis (Parent ?p)))
 ;------------------------------------------------------------------------------
 (defrule IncrementFrequencyCounter-BasicBlock
-			"Goes through a given Region counting the number of basic blocks found
-			within the region. Valid blocks are blocks that contain more than one 
-			instruction as we don't want to count JS nodes as they don't usually 
-			contain code."
-			(declare (salience 210))
-			(Stage Analysis $?)
-			(object (is-a Region) (ID ?p) (Class Region) (Contents $? ?t $?) 
-					  (CanWavefrontSchedule FALSE))
-			(object (is-a BasicBlock) (ID ?t) (Parent ?p) (Contents $?insts))
-			(test (> (length$ $?insts) 1))
-			?fa <- (object (is-a FrequencyAnalysis) (Parent ?p))
-			=>
-			(send ?fa .IncrementFrequency))
+         "Goes through a given Region counting the number of basic blocks found
+         within the region. Valid blocks are blocks that contain more than one 
+         instruction as we don't want to count JS nodes as they don't usually 
+         contain code."
+         (declare (salience 1))
+         (Stage FrequencyAnalysis $?)
+         (object (is-a Region) (ID ?p) (Class Region) (Contents $? ?t $?) 
+                 (CanWavefrontSchedule FALSE))
+         (object (is-a BasicBlock) (ID ?t) (Parent ?p) (Contents $?insts))
+         (test (> (length$ $?insts) 1))
+         ?fa <- (object (is-a FrequencyAnalysis) (Parent ?p))
+         =>
+         (send ?fa .IncrementFrequency))
 ;------------------------------------------------------------------------------
 (defrule ImplyEnoughBlocks
-			"There are enough blocks within the target region to make it a 
-			candidate for wavefront scheduling. Make a hint that says this."
-			(declare (salience 200))
-			(Stage Analysis $?)
-			?fa <- (object (is-a FrequencyAnalysis) (Parent ?p) 
-								(Frequency ?z&:(and (< ?z 100) (> ?z 1))))
-			?region <- (object (is-a Region) (Class Region) (ID ?p))
-			=>
-			(unmake-instance ?fa)
-			(modify-instance ?region (CanWavefrontSchedule TRUE)))
+         "There are enough blocks within the target region to make it a 
+         candidate for wavefront scheduling. Make a hint that says this."
+         ;(declare (salience 200))
+         (Stage FrequencyAnalysis $?)
+         ?fa <- (object (is-a FrequencyAnalysis) (Parent ?p) 
+                        (Frequency ?z&:(and (< ?z 100) (> ?z 1))))
+         ?region <- (object (is-a Region) (Class Region) (ID ?p))
+         =>
+         (unmake-instance ?fa)
+         (modify-instance ?region (CanWavefrontSchedule TRUE)))
 ;------------------------------------------------------------------------------

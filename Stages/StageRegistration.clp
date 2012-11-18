@@ -45,6 +45,7 @@
                         FixupRename
                         CleanUp-Merger
                         ModificationPropagation
+                        FrequencyAnalysis
                         Analysis 
                         Analysis-Update
                         ExtendedMemoryAnalysis
@@ -64,6 +65,7 @@
          (not (exists (object (is-a Loop))))
          =>
          (assert (Stage ModificationPropagation
+                        FrequencyAnalysis
                         Analysis 
                         Analysis-Update
                         ExtendedMemoryAnalysis
