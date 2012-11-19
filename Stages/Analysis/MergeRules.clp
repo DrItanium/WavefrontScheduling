@@ -90,6 +90,7 @@
          (bind ?cs $?c)
          (bind ?ps $?p)
          (bind ?lds $?ld)
+         (object-pattern-match-delay
          (progn$ (?target ?t0)
                  (if (not (member$ ?target ?cs)) then
                    (bind ?cs (insert$ ?cs 1 ?target))))
@@ -99,7 +100,7 @@
                  (if (not (member$ ?target ?ps)) then
                    (bind ?ps (insert$ ?ps 1 ?target))))
          (modify-instance ?inst (Consumers ?cs) (Producers ?ps) 
-                          (LocalDependencies ?lds)))
+                          (LocalDependencies ?lds))))
 ;------------------------------------------------------------------------------
 (defrule InjectConsumers
          "Adds a given consumer to the target instruction"
@@ -109,10 +110,11 @@
          =>
          (retract ?fct)
          (bind ?cons $?cs)
+         (object-pattern-match-delay
          (progn$ (?target ?targets)
                  (if (not (member$ ?target ?cons)) then
                    (bind ?cons (insert$ ?cons 1 ?target))))
-         (modify-instance ?inst (Consumers ?cons)))
+         (modify-instance ?inst (Consumers ?cons))))
 ;------------------------------------------------------------------------------
 (defrule InjectProducersAndLocalDependencies
          "Adds a given producer to the target instruction."
@@ -124,12 +126,13 @@
          (retract ?fct)
          (bind ?prods $?ps)
          (bind ?lds $?ld)
+         (object-pattern-match-delay
          (progn$ (?target ?targets)
                  (if (not (member$ ?target ?lds)) then
                    (bind ?lds (insert$ ?lds 1 ?target)))
                  (if (not (member$ ?target ?prods)) then
                    (bind ?prods (insert$ ?prods 1 ?target))))
-         (modify-instance ?inst (Producers ?prods) (LocalDependencies ?lds)))
+         (modify-instance ?inst (Producers ?prods) (LocalDependencies ?lds))))
 ;------------------------------------------------------------------------------
 (defrule SetifyInstructionProducers
          (Stage ExtendedMemoryAnalysis-MakeSet $?)
