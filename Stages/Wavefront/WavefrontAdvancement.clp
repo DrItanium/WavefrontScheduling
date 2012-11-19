@@ -46,11 +46,12 @@
 			(test (not (subsetp ?ppe (send ?wave get-DeleteNodes)))) 
 			?agObj <- (object (is-a PathAggregate) (Parent ?b))
 			=>
+      (object-pattern-match-delay
 			(if (not (member$ ?b (send ?wave get-Closed))) then
 			  (bind ?ind (member$ ?b (send ?wave get-Contents)))
 			  (slot-delete$ ?wave Contents ?ind ?ind)
 			  (slot-insert$ ?wave Closed 1 ?b))
-			(modify-instance ?wave (DeleteNodes $?a $?c)))
+			(modify-instance ?wave (DeleteNodes $?a $?c))))
 ;------------------------------------------------------------------------------
 (defrule DeleteElementFromWavefront
 			(declare (salience 180))
@@ -60,12 +61,13 @@
 								  (DeleteNodes ?a $?))
 			(object (is-a Diplomat) (ID ?a) (NextPathElements $?npe))
 			=>
+      (object-pattern-match-delay
 			(bind ?ind (member$ ?a (send ?wave get-Contents)))
 			(bind ?ind2 (member$ ?a (send ?wave get-Closed)))
 			(slot-delete$ ?wave DeleteNodes 1 1)
 			(if ?ind then (slot-delete$ ?wave Contents ?ind ?ind))
 			(if ?ind2 then (slot-delete$ ?wave Closed ?ind2 ?ind2))
-			(assert (Add into ?id blocks $?npe)))
+			(assert (Add into ?id blocks $?npe))))
 ;------------------------------------------------------------------------------
 (defrule PutSuccessorsOntoWavefront-Match
 			(declare (salience 100))
@@ -142,8 +144,9 @@
 			=>
 			;this is a little gross but it is a very easy way to ensure that
 			;things work correctly
+      (object-pattern-match-delay
 			(llvm-replace-all-uses ?ptr ?nPtr)
 			(modify-instance ?bb (UnlinkedInstructions $?rest))
 			(llvm-unlink-and-delete-instruction ?ptr)
-			(unmake-instance ?instruction))
+			(unmake-instance ?instruction)))
 ;------------------------------------------------------------------------------
