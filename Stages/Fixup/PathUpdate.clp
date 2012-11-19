@@ -44,47 +44,45 @@
 			?obj2 <- (object (is-a OwnershipDeterminant) (Parent ?a))
 			=>
 			(retract ?fct)
+      (object-pattern-match-delay 
 			(slot-insert$ ?obj2 PotentialChildren 1 ?b)
-			(slot-insert$ ?obj Claims 1 ?a))
+			(slot-insert$ ?obj Claims 1 ?a)))
 ;------------------------------------------------------------------------------
 (defrule DetermineIndirectClaim
 			(Stage DeterminantResolution $?)
 			?t0 <- (object (is-a OwnershipDeterminant) (Parent ?b) 
-								(Claims $? ?a $?))
+								(Claims $?v ?a $?x) (IndirectClaims $?ic))
 			(object (is-a OwnershipDeterminant) (Parent ~?b) 
 					  (PotentialChildren $? ?b $?) (Claims $? ?a $?))
 			?t1 <- (object (is-a OwnershipDeterminant) (Parent ?a) 
-								(PotentialChildren $? ?b $?))
+								(PotentialChildren $?t ?b $?r))
 			=>
 			;let's see if this is faster
-			(bind ?ind0 (member$ ?a (send ?t0 get-Claims)))
-			(bind ?ind1 (member$ ?b (send ?t1 get-PotentialChildren)))
-			(slot-insert$ ?t0 IndirectClaims 1 ?a)
-			(slot-delete$ ?t0 Claims ?ind0 ?ind0)
-			(slot-delete$ ?t1 PotentialChildren ?ind1 ?ind1))
+      (object-pattern-match-delay 
+      (modify-instance ?t0 (IndirectClaims ?ic ?a) (Claims ?v ?x))
+      (modify-instance ?t1 (PotentialChildren ?t ?r))))
 ;------------------------------------------------------------------------------
 (defrule DetermineIndirectIndirectClaim
 			(Stage DeterminantIndirectResolution $?)
 			?t0 <- (object (is-a OwnershipDeterminant) (Parent ?b) 
-								(Claims $? ?a $?))
+								(Claims $?l ?a $?x) (IndirectClaims $?ic))
 			(object (is-a OwnershipDeterminant) (Parent ~?b&~?a) 
 					  (IndirectClaims $? ?a $?) (PotentialChildren $? ?b $?))
 			?t1 <- (object (is-a OwnershipDeterminant) (Parent ?a)
-								(PotentialChildren $? ?b $?))
+								(PotentialChildren $?z ?b $?q))
 			=>
-			(bind ?ind0 (member$ ?a (send ?t0 get-Claims)))
-			(bind ?ind1 (member$ ?b (send ?t1 get-PotentialChildren)))
-			(slot-insert$ ?t0 IndirectClaims 1 ?a)
-			(slot-delete$ ?t0 Claims ?ind0 ?ind0)
-			(slot-delete$ ?t1 PotentialChildren ?ind1 ?ind1))
+      (object-pattern-match-delay 
+       (modify-instance ?t0 (IndirectClaims ?ic ?a) (Claims ?l ?x))
+       (modify-instance ?t1 (PotentialChildren ?z ?q))))
 ;------------------------------------------------------------------------------
 (defrule DeleteNonExistentReferences
 			(Stage Fixup $?)
 			?region <- (object (is-a Region) (Contents $? ?b $?))
 			(not (exists (object (ID ?b))))
 			=>
+      (object-pattern-match-delay 
 			(bind ?ind0 (member$ ?b (send ?region get-Contents)))
-			(slot-delete$ ?region Contents ?ind0 ?ind0))
+			(slot-delete$ ?region Contents ?ind0 ?ind0)))
 ;------------------------------------------------------------------------------
 (defrule UpdateOwnerOfTargetRegion
 			(Stage FixupUpdate $?)
@@ -106,7 +104,7 @@
 			(object (is-a OwnershipDeterminant) (Parent ?p)
 					  (PotentialChildren $? ?a $?))
 			?region <- (object (is-a Region) (ID ?p) (Contents $?c))
-			(test (eq FALSE (member$ ?a ?c)))
+      (test (not (member$ ?a ?c)))
 			=>
 			(slot-insert$ ?region Contents 1 ?a))
 ;------------------------------------------------------------------------------
@@ -114,9 +112,7 @@
 			"Deletes all of the OwnershipDeterminant objects in a single rule 
 			fire"
 			(Stage CleanUp-Merger $?)
-			;?obj <- (object (is-a OwnershipDeterminant))
 			=>
-			;(printout t "Deleted all OwnershipDeterminants" crlf)
 			(progn$ (?obj (find-all-instances ((?list OwnershipDeterminant)) 
 														 TRUE))
 					  (unmake-instance ?obj)))
