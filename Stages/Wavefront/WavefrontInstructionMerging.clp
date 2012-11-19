@@ -103,9 +103,13 @@
 			?fct <- (Move ?cpv into ?e)
 			?newBlock <- (object (is-a BasicBlock) 
 										(ID ?e) 
-										(Contents $?blockBefore ?last))
+										(Contents $?blockBefore ?last)
+                    (Produces $?nBProds))
 			?agObj <- (object (is-a PathAggregate) 
-									(Parent ?e))
+									(Parent ?e)
+                  (InstructionPropagation $?agIP)
+                  (ScheduledInstructions $?agSI)
+                  (ReplacementActions $?agRA))
 			?terminator <- (object (is-a TerminatorInstruction) 
 										  (Pointer ?tPtr) 
 										  (ID ?last) 
@@ -113,12 +117,15 @@
 										  (Parent ?e))
 			?cpvObject <- (object (is-a CompensationPathVector) 
 										 (ID ?cpv) 
-										 (Parent ?inst))
+										 (Parent ?inst)
+                     (ScheduleTargets $?cpvST)
+                     (Aliases $?cpvAliases))
 			?newInst <- (object (is-a Instruction) 
 									  (ID ?inst) 
 									  (Pointer ?nPtr) 
 									  (Parent ?otherBlock) 
 									  (DestinationRegisters ?register) 
+                    (Consumers $?niConsumers)
 									  (Class ?class))
 			?oldBlock <- (object (is-a BasicBlock) 
 										(ID ?otherBlock) 
@@ -127,29 +134,44 @@
 			;TODO: add another rule where we have to update the consumers list as
 			;      well
 			=>
+      (object-pattern-match-delay
 			;(printout t "Scheduled " ?inst " into " ?e crlf)
 			(modify-instance ?terminator (TimeIndex (+ ?ti 1)))
-			(slot-insert$ ?newBlock Produces 1 ?register)
+      ;(modify-instance ?newBlock (Produces ?nBProds ?register))
 			(modify-instance ?oldBlock (Contents $?before $?rest) 
 								  (Produces $?pBefore $?pRest))
-			(modify-instance ?cpvObject (Paths))
-			(assert (Remove evidence of ?inst from instructions 
-								 (send ?newInst get-Consumers))
+			;(modify-instance ?cpvObject (Paths))
+			(assert (Remove evidence of ?inst from instructions $?niConsumers)
+								 ;(send ?newInst get-Consumers))
 					  (Recompute block ?otherBlock))
 			(retract ?fct)
 			(if (eq StoreInstruction ?class) then 
-			  (slot-insert$ ?agObj ScheduledInstructions 1 ?inst ?register)
-			  (modify-instance ?newBlock (Contents $?blockBefore ?inst ?last))
+       (modify-instance ?agObj 
+        (ScheduledInstructions $?agSI ?inst ?register)
+        (ReplacementActions $?agRA ?inst ?inst !))
+			  ;(slot-insert$ ?agObj ScheduledInstructions 1 ?inst ?register)
+			  (modify-instance ?newBlock 
+         (Produces $?nBProds ?register)
+         (Contents $?blockBefore ?inst ?last))
+        (modify-instance ?cpvObject 
+         (Paths)
+         (ScheduleTargets ?cpvST ?e ?inst)
+         (Aliases $?cpvAliases ?inst ?e))
 			  (llvm-unlink-and-move-instruction-before ?nPtr ?tPtr)
-			  (slot-insert$ ?cpvObject ScheduleTargets 1 ?e ?inst)
-			  (slot-insert$ ?cpvObject Aliases 1 ?inst ?e)
-			  (slot-insert$ ?agObj ReplacementActions 1 ?inst ?inst !)
+			  ;(slot-insert$ ?cpvObject ScheduleTargets 1 ?e ?inst)
+			  ;(slot-insert$ ?cpvObject Aliases 1 ?inst ?e)
+			  ;(slot-insert$ ?agObj ReplacementActions 1 ?inst ?inst !)
 			  else
 			  (bind ?newName (sym-cat movedinstruction. (gensym*) . ?inst))
-			  (slot-insert$ ?cpvObject ScheduleTargets 1 ?e ?newName)
-			  (slot-insert$ ?cpvObject Aliases 1 ?newName ?e)
-			  (slot-insert$ ?agObj ReplacementActions 1 ?inst ?newName !)
-			  (modify-instance ?newBlock (Contents $?blockBefore ?newName ?last))
+        (modify-instance ?cpvObject (Paths)
+         (ScheduleTargets ?cpvST ?e ?newName)
+         (Aliases ?cpvAliases ?newName ?e))
+			  ;(slot-insert$ ?cpvObject ScheduleTargets 1 ?e ?newName)
+			  ;(slot-insert$ ?cpvObject Aliases 1 ?newName ?e)
+			  ;(slot-insert$ ?agObj ReplacementActions 1 ?inst ?newName !)
+			  (modify-instance ?newBlock 
+         (Produces $?nBProds ?register)
+         (Contents $?blockBefore ?newName ?last))
 			  (bind ?newPtr (llvm-clone-instruction ?nPtr ?newName))
 			  ;purge the list of producers and consumers
 			  (duplicate-instance ?inst to ?newName 
@@ -164,8 +186,11 @@
 										 (Parent ?e))
 			  (llvm-move-instruction-before ?newPtr ?tPtr)
 			  (slot-insert$ ?oldBlock UnlinkedInstructions 1 ?inst)
-			  (slot-insert$ ?agObj InstructionPropagation 1 ?inst ?newName ?e !)
-			  (slot-insert$ ?agObj ScheduledInstructions 1 ?inst)))
+        (modify-instance ?agObj (ReplacementActions $?agRA ?inst ?newName !)
+         (InstructionPropagation $?agIP ?inst ?newName ?e !)
+         (ScheduledInstructions $?agSI ?inst)))))
+			  ;(slot-insert$ ?agObj InstructionPropagation 1 ?inst ?newName ?e !)
+			  ;(slot-insert$ ?agObj ScheduledInstructions 1 ?inst))))
 ;------------------------------------------------------------------------------
 (defrule CloneInstructionIntoBlock
 			"Moves the given object into bottom of the given block"
@@ -195,6 +220,7 @@
 			=>
 			;we also need to update all CPVs within 
 			(retract ?fct)
+  (object-pattern-match-delay
 			(bind ?newName (sym-cat compensation.copy. (gensym*) . ?inst))
 			;(printout t "Scheduled " ?inst " into " ?e " from " ?otherBlock 
 			;            " as " ?newName crlf)
@@ -227,7 +253,7 @@
 					  (bind ?cPath (symbol-to-instance-name ?z))
 					  (if (not (member$ ?e (send ?cPath get-Contents))) then
 						 (bind ?leftOvers (insert$ ?leftOvers 1 ?z))))
-			(modify-instance ?cpvObject (Paths ?leftOvers)))
+			(modify-instance ?cpvObject (Paths ?leftOvers))))
 ;------------------------------------------------------------------------------
 (defrule FAILURE-CLONE
 			(declare (salience -768))
