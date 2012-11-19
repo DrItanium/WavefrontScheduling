@@ -57,17 +57,14 @@
              (bind ?ptrList (insert$ ?ptrList ?i0 (send ?obj get-Pointer)))
              (bind ?symList (insert$ ?symList ?i0 ?var))
             (bind ?i0 (+ ?i0 1))))
-			(assert (Replace uses of symbol ?orig with symbol ?new for 
-								  instructions ?symList)
-					  (Replace uses of pointer ?oPtr with pointer ?nPtr for 
-								  instructions ?ptrList)))
+      (assert ({ clips ! ?orig => ?new for ?symList })
+              ({ llvm ! ?oPtr => ?nPtr for ?ptrList })))
 ;------------------------------------------------------------------------------
 (defrule ReplaceUsesInLLVM
 			(declare (salience -1))
 			(Stage WavefrontSchedule $?)
 			(Substage Rename $?)
-			?fct <- (Replace uses of pointer ?from with pointer ?to for 
-								  instructions $?p2)
+      ?fct <- ({ llvm ! ?from => ?to for $?p2 })
 			=>
 			(if (llvm-replace-uses ?from ?to ?p2) then 
 			  (retract ?fct) 
@@ -86,36 +83,21 @@
 			(declare (salience -1))
 			(Stage WavefrontSchedule $?)
 			(Substage Rename $?)
-			?fct <- (Replace uses of symbol ?from with symbol ?to for instructions
-								  ?symbol $?rest)
+      ?fct <- ({ clips ! ?from => ?to for ?symbol $?rest })
 			?inst <- (object (is-a Instruction) (ID ?symbol) 
 								  (Operands $?operands))
-      (test (member$ ?from ?operands))
 			=>
 			(modify-instance ?inst (Operands))
 			(retract ?fct)
-			(assert (Replace uses of symbol ?from with symbol ?to for instruction 
-								  ?symbol with operands $?operands)
-					  (Replace uses of symbol ?from with symbol ?to for instructions
-								  $?rest)))
+      (assert ({ clips ! ?from => ?to for $?rest })
+              ({ clips ! ?from => ?to replacement ?symbol 
+               operands $?operands })))
 ;------------------------------------------------------------------------------
-(defrule ReplaceUsesInCLIPS-Skip
-			(declare (salience -1))
-			(Stage WavefrontSchedule $?)
-			(Substage Rename $?)
-			?fct <- (Replace uses of symbol ?from with symbol ?to for instructions
-								  ?symbol $?rest)
-			(object (is-a Instruction) (ID ?symbol) (Operands $?operands))
-      (test (not (member$ ?from ?operands)))
-			=>
-			(retract ?fct)
-			(assert (Replace uses of symbol ?from with symbol ?to for instructions
-								  $?rest)))
 (defrule ReplaceUsesInCLIPS-End
 			(declare (salience -1))
 			(Stage WavefrontSchedule $?)
 			(Substage Rename $?)
-			?fct <- (Replace uses of symbol ? with symbol ? for instructions)
+      ?fct <- ({ clips ! ?from => ?to for })
 			=>
 			(retract ?fct))
 ;------------------------------------------------------------------------------
@@ -123,36 +105,29 @@
 			(declare (salience -2))
 			(Stage WavefrontSchedule $?)
 			(Substage Rename $?)
-			?fct <- (Replace uses of symbol ?f with symbol ?t for instruction ?s 
-								  with operands ?op $?ops)
+      ?fct <- ({ clips ! ?f => ?t replacement ?s operands ?op&~?f $?ops })
 			?inst <- (object (is-a Instruction) (ID ?s))
-			(test (neq ?op ?f))
 			=>
 			(slot-insert$ ?inst Operands 1 ?op)
 			(retract ?fct)
-			(assert (Replace uses of symbol ?f with symbol ?t for instruction ?s 
-								  with operands $?ops)))
+      (assert ({ clips ! ?f => ?t replacement ?s operands $?ops })))
 ;------------------------------------------------------------------------------
 (defrule ReplaceIndividualInstructionUses-Match
 			(declare (salience -2))
 			(Stage WavefrontSchedule $?)
 			(Substage Rename $?)
-			?fct <- (Replace uses of symbol ?f with symbol ?t for instruction ?s 
-								  with operands ?op $?ops)
+      ?fct <- ({ clips ! ?f => ?t replacement ?s operands ?f $?ops })
 			?inst <- (object (is-a Instruction) (ID ?s))
-			(test (eq ?op ?f))
 			=>
 			(slot-insert$ ?inst Operands 1 ?t)
 			(retract ?fct)
-			(assert (Replace uses of symbol ?f with symbol ?t for instruction ?s 
-								  with operands $?ops)))
+      (assert ({ clips ! ?f => ?t replacement ?s operands $?ops })))
 ;------------------------------------------------------------------------------
 (defrule ReplaceIndividualInstructionUses-Empty
 			(declare (salience -2))
 			(Stage WavefrontSchedule $?)
 			(Substage Rename $?)
-			?fct <- (Replace uses of symbol ? with symbol ? for instruction ? with 
-								  operands)
+      ?fct <- ({ clips ! ?f => ?t replacement ?s operands })
 			=>
 			(retract ?fct))
 ;------------------------------------------------------------------------------
