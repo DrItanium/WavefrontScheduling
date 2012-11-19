@@ -680,8 +680,8 @@
          (Stage WavefrontSchedule $?)
          (Substage Analyze $?)
          ?f0 <- (Analyze slice ?s0 for ?e and cpv ?cpv)
-         ?f1 <- (Analyze slice ?s1 for ?e and cpv ?cpv)
-         (test (neq ?f0 ?f1))
+         ?f1 <- (Analyze slice ?s1&~?s0 for ?e and cpv ?cpv)
+         ;(test (neq ?f0 ?f1))
          =>
          (retract ?f0 ?f1)
          (assert (Analyze in ?e using cpv ?cpv and slices ?s0 ?s1)))
@@ -694,25 +694,6 @@
          =>
          (retract ?f0)
          (assert (Analyze in ?e using cpv ?cpv and slices ?s0)))
-;------------------------------------------------------------------------------
-(defrule MergeSliceAnalysisFacts-SingleMulti
-         (Stage WavefrontSchedule $?)
-         (Substage Analyze $?)
-         ?f0 <- (Analyze slice ?s0 for ?e and cpv ?cpv)
-         ?f1 <- (Analyze in ?e using cpv ?cpv and slices $?z)
-         (test (eq FALSE (member$ ?s0 $?z)))
-         =>
-         (retract ?f0 ?f1)
-         (assert (Analyze in ?e using cpv ?cpv and slices $?z ?s0)))
-;------------------------------------------------------------------------------
-(defrule RetractSliceAnalysisFacts-SingleMulti
-         (Stage WavefrontSchedule $?)
-         (Substage Analyze $?)
-         ?f0 <- (Analyze slice ?s0 for ?e and cpv ?cpv)
-         ?f1 <- (Analyze in ?e using cpv ?cpv and slices $?z)
-         (test (neq FALSE (member$ ?s0 $?z)))
-         =>
-         (retract ?f0))
 ;------------------------------------------------------------------------------
 (defrule MergeSliceAnalysisFacts-MultiMulti
          (Stage WavefrontSchedule $?)
