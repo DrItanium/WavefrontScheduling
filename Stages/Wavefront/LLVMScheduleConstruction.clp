@@ -148,7 +148,6 @@
 
 			(exit))
 ;------------------------------------------------------------------------------
-
 (defrule CanScheduleInstructionNow
 			(declare (salience 343))
 			(Stage WavefrontSchedule $?)
@@ -159,8 +158,9 @@
 			(object (is-a Instruction) (ID ?curr) (LocalDependencies $?p))
 			(test (subsetp $?p $?s))
 			=>
+      (object-pattern-match-delay
 			(slot-delete$ ?sched Contents 1 1)
-			(slot-insert$ ?sched Success 1 ?curr))
+			(slot-insert$ ?sched Success 1 ?curr)))
 ;------------------------------------------------------------------------------
 (defrule MustStallInstructionForSchedule
 			(declare (salience 343))
@@ -172,8 +172,9 @@
 			(object (is-a Instruction) (ID ?curr) (LocalDependencies $?p))
 			(test (not (subsetp $?p $?s)))
 			=>
+      (object-pattern-match-delay 
 			(slot-delete$ ?sched Contents 1 1)
-			(slot-insert$ ?sched Failure 1 ?curr))
+			(slot-insert$ ?sched Failure 1 ?curr)))
 ;------------------------------------------------------------------------------
 (defrule EndInstructionScheduleAttempt
 			(Stage WavefrontSchedule $?)
