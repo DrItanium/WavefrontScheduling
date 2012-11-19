@@ -50,10 +50,13 @@
 			(retract ?fct)
 			(bind ?ptrList (create$))
 			(bind ?symList (create$))
+      (bind ?i0 1)
 			(progn$ (?var $?rest)
 					  (bind ?obj (symbol-to-instance-name ?var))
-					  (bind ?ptrList (create$ ?ptrList (send ?obj get-Pointer)))
-					  (bind ?symList (create$ ?symList ?var)))
+            (if (member$ ?orig (send ?obj get-Operands)) then
+             (bind ?ptrList (insert$ ?ptrList ?i0 (send ?obj get-Pointer)))
+             (bind ?symList (insert$ ?symList ?i0 ?var))
+            (bind ?i0 (+ ?i0 1))))
 			(assert (Replace uses of symbol ?orig with symbol ?new for 
 								  instructions ?symList)
 					  (Replace uses of pointer ?oPtr with pointer ?nPtr for 
@@ -87,6 +90,7 @@
 								  ?symbol $?rest)
 			?inst <- (object (is-a Instruction) (ID ?symbol) 
 								  (Operands $?operands))
+      (test (member$ ?from ?operands))
 			=>
 			(modify-instance ?inst (Operands))
 			(retract ?fct)
@@ -95,7 +99,18 @@
 					  (Replace uses of symbol ?from with symbol ?to for instructions
 								  $?rest)))
 ;------------------------------------------------------------------------------
-
+(defrule ReplaceUsesInCLIPS-Skip
+			(declare (salience -1))
+			(Stage WavefrontSchedule $?)
+			(Substage Rename $?)
+			?fct <- (Replace uses of symbol ?from with symbol ?to for instructions
+								  ?symbol $?rest)
+			(object (is-a Instruction) (ID ?symbol) (Operands $?operands))
+      (test (not (member$ ?from ?operands)))
+			=>
+			(retract ?fct)
+			(assert (Replace uses of symbol ?from with symbol ?to for instructions
+								  $?rest)))
 (defrule ReplaceUsesInCLIPS-End
 			(declare (salience -1))
 			(Stage WavefrontSchedule $?)
