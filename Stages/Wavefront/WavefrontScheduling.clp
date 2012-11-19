@@ -403,8 +403,8 @@
          (Substage Slice $?)
          ?fct <- (Generate slices for block ?e in ?r with cpv ?cpv with stop 
                            block ?b using paths ?path $?paths)
-         (object (is-a Path) (ID ?path) (Contents $?z))
-         (test (member$ ?e ?z))
+         (object (is-a Path) (ID ?path) (Contents $? ?e $?))
+         ;(test (member$ ?e ?z))
          =>
          (retract ?fct)
          (assert (Generate slice for block ?e in ?r with cpv ?cpv with stop 
