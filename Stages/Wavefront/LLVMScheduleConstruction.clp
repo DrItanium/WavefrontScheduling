@@ -57,7 +57,6 @@
 			(make-instance (gensym*) of Schedule (Parent ?e) 
 								(Contents ?firstNonPhi ?instructions)))
 ;------------------------------------------------------------------------------
-
 (defrule ConstructScheduleObjectForBlock-TerminatorOnly
 			(declare (salience 10))
 			(Stage WavefrontSchedule $?)
@@ -70,7 +69,6 @@
 			;mark the block as closed
 			(retract ?fct))
 ;------------------------------------------------------------------------------
-
 (defrule ConstructScheduleObjectForBlock-TerminatorAndPhisOnly
 			(declare (salience 10))
 			(Stage WavefrontSchedule $?)
@@ -83,7 +81,6 @@
 			=>
 			;mark the block as closed
 			(retract ?fct))
-
 ;------------------------------------------------------------------------------
 (defrule Failout-Strange-ScheduleFact
 			(declare (salience 10))
@@ -97,18 +94,18 @@
 						 "What should be a block is a " ?c " named " ?e crlf
 						 "What should be a region is a " ?c2 " named " ?r crlf)
 			(exit))
-
-
 ;------------------------------------------------------------------------------
 (defrule PreschedulePhiNodes
 			"Adds all phi nodes into the list of scheduled instructions.
 			We can always assume they are ready to go too!"
 			(Stage WavefrontSchedule $?)
 			(Substage ScheduleObjectCreation $?)
-			?schedObj <- (object (is-a Schedule) (ID ?n) (Parent ?p))
+			?schedObj <- (object (is-a Schedule) (ID ?n) (Parent ?p) (Scheduled
+					$?s))
 			(object (is-a BasicBlock) (ID ?p) (Contents $? ?c $?))
 			(object (is-a PhiNode) (ID ?c))
-			(test (not (member$ ?c (send ?schedObj get-Scheduled))))
+			(test (not (member$ ?c ?s)))
+							;(send ?schedObj get-Scheduled))))
 			=>
 			(slot-insert$ ?schedObj Scheduled 1 ?c))
 ;------------------------------------------------------------------------------
@@ -119,10 +116,11 @@
 			(Stage WavefrontSchedule $?)
 			(Substage ScheduleObjectCreation $?)
 			?schedObj <- (object (is-a Schedule) (ID ?n) (Parent ?p) 
-										(Contents $? ?c $?))
+										(Contents $? ?c $?) (Scheduled $?s))
 			?inst <- (object (is-a Instruction) (ID ?c) (Parent ?p)
 								  (NonLocalDependencies $? ?d $?))
-			(test (not (member$ ?d (send ?schedObj get-Scheduled))))
+			(test (not (member$ ?d ?s)))
+			;(test (not (member$ ?d (send ?schedObj get-Scheduled))))
 			=>
 			(slot-insert$ ?schedObj Scheduled 1 ?d))
 ;------------------------------------------------------------------------------
@@ -157,7 +155,7 @@
 			(exit))
 ;------------------------------------------------------------------------------
 (defrule CanScheduleInstructionNow
-			(declare (salience 343))
+			(declare (salience 344))
 			(Stage WavefrontSchedule $?)
 			(Substage ScheduleObjectUsage $?)
 			(Perform Schedule ?n for ?b)
@@ -174,7 +172,7 @@
 			(declare (salience 343))
 			(Stage WavefrontSchedule $?)
 			(Substage ScheduleObjectUsage $?)
-			;(Perform Schedule ?n for ?b)
+			(Perform Schedule ?n for ?b)
 			?sched <- (object (is-a Schedule) (ID ?n) (Contents ?curr $?) 
 									(Scheduled $?s))
 			(object (is-a Instruction) (ID ?curr) (LocalDependencies $?p))
