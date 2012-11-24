@@ -27,9 +27,19 @@
 ; data dependencies between different instructions inside of a basic block
 ; Written by Joshua Scoggins (7/1/2012)
 ;------------------------------------------------------------------------------
+(defrule MarkLocalDependency-Call
+ 			(declare (salience 1))
+         (Stage Analysis $?)
+         (object (is-a CallInstruction) (Parent ?p) (ID ?t0) 
+                        (ArgumentOperands $? ?o $?))
+         (object (is-a Instruction) (ID ?o) (Parent ?p))
+         =>
+         (assert (Instruction ?o produces ?t0)
+                 (Instruction ?t0 consumes ?o)))
+;------------------------------------------------------------------------------
 (defrule MarkLocalDependency 
          (Stage Analysis $?)
-         ?i0 <- (object (is-a Instruction) (Parent ?p) (ID ?t0) 
+         ?i0 <- (object (is-a Instruction&~CallInstruction) (Parent ?p) (ID ?t0) 
                         (Operands $? ?o $?))
          (object (is-a Instruction) (ID ?o) (Parent ?p))
          =>
