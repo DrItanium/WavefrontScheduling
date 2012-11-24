@@ -126,6 +126,14 @@
 			=>
 			(slot-insert$ ?schedObj Scheduled 1 ?d))
 ;------------------------------------------------------------------------------
+(defrule AssertPerformScheduling
+ (declare (salience -1))
+ (Stage WavefrontSchedule $?)
+ (Substage ScheduleObjectCreation $?)
+ (object (is-a Schedule) (ID ?q) (Parent ?b))
+ =>
+ (assert (Perform Schedule ?q for ?b)))
+;------------------------------------------------------------------------------
 (defrule PrintoutSchedules
 			(declare (salience -10))
 			(Stage WavefrontSchedule $?)
@@ -166,7 +174,7 @@
 			(declare (salience 343))
 			(Stage WavefrontSchedule $?)
 			(Substage ScheduleObjectUsage $?)
-			(Peform Schedule ?n for ?b)
+			;(Perform Schedule ?n for ?b)
 			?sched <- (object (is-a Schedule) (ID ?n) (Contents ?curr $?) 
 									(Scheduled $?s))
 			(object (is-a Instruction) (ID ?curr) (LocalDependencies $?p))
@@ -179,7 +187,7 @@
 (defrule EndInstructionScheduleAttempt
 			(Stage WavefrontSchedule $?)
 			(Substage ResetScheduling $?)
-			?fct <- (Perform Schedule ?n for ?)
+			?fct <- (Perform Schedule ?n for ?b)
 			?sched <- (object (is-a Schedule) (ID ?n)
 									(Contents))
 			=>
@@ -233,6 +241,7 @@
 									(Failure $?elements))
 			=>
 			(retract ?fct)
+			(assert (Perform Schedule ?n for ?p))
 			(modify-instance ?sched (Contents ?elements) (Failure))
 			(assert (Reset scheduling process)))
 ;------------------------------------------------------------------------------
