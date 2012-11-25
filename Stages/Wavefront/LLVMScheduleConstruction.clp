@@ -159,28 +159,24 @@
 			(Stage WavefrontSchedule $?)
 			(Substage ScheduleObjectUsage $?)
 			(Perform Schedule ?n for ?b)
-			?sched <- (object (is-a Schedule) (ID ?n) (Contents ?curr $?) 
-									(Scheduled $?s))
-			(object (is-a Instruction) (ID ?curr) (LocalDependencies $?p))
-			(test (subsetp $?p $?s))
+			?sched <- (object (is-a Schedule) (ID ?n) (Contents ?curr $?rest) 
+									(Scheduled $?s) (Success $?succ))
+			(object (is-a Instruction) (ID ?curr) 
+			 (LocalDependencies $?p&:(subsetp $?p $?s)))
 			=>
-      (object-pattern-match-delay
-			(slot-delete$ ?sched Contents 1 1)
-			(slot-insert$ ?sched Success 1 ?curr)))
+		 (modify-instance ?sched (Contents $?rest) (Success $?succ ?curr)))
 ;------------------------------------------------------------------------------
 (defrule MustStallInstructionForSchedule
 			(declare (salience 343))
 			(Stage WavefrontSchedule $?)
 			(Substage ScheduleObjectUsage $?)
 			(Perform Schedule ?n for ?b)
-			?sched <- (object (is-a Schedule) (ID ?n) (Contents ?curr $?) 
-									(Scheduled $?s))
-			(object (is-a Instruction) (ID ?curr) (LocalDependencies $?p))
-			(test (not (subsetp $?p $?s)))
+			?sched <- (object (is-a Schedule) (ID ?n) (Contents ?curr $?rest) 
+									(Scheduled $?s) (Failure $?fails))
+			(object (is-a Instruction) (ID ?curr) 
+			 (LocalDependencies $?p&:(not (subsetp $?p $?s))))
 			=>
-      (object-pattern-match-delay 
-			(slot-delete$ ?sched Contents 1 1)
-			(slot-insert$ ?sched Failure 1 ?curr)))
+		 (modify-instance ?sched (Contents $?rest) (Failure $?fails ?curr)))
 ;------------------------------------------------------------------------------
 (defrule EndInstructionScheduleAttempt
 			(Stage WavefrontSchedule $?)
@@ -196,20 +192,26 @@
 			(Stage WavefrontSchedule $?)
 			(Substage ResetScheduling $?)
 			?sched <- (object (is-a Schedule) (ID ?n) (Parent ?p)
-									(Success ?targ $?))
+									(Success ?targ $?rest) (Scheduled $?s)
+									(InstructionStream $?is))
 			(object (is-a Instruction) (ID ?targ))
 			=>
-			(send ?sched .MarkScheduled ?targ 1))
+			(object-pattern-match-delay
+			 (modify-instance ?sched (Success $?rest) (Scheduled $?s ?targ)
+			  (InstructionStream $?is ?targ))))
 ;------------------------------------------------------------------------------
 (defrule PutSuccessfulStoreInstructionIntoInstructionStream
 			(declare (salience 271))
 			(Stage WavefrontSchedule $?)
 			(Substage ResetScheduling $?)
 			?sched <- (object (is-a Schedule) (ID ?n) (Parent ?p)
-									(Success ?targ $?))
+									(Success ?targ $?rest) (Scheduled $?s)
+									(InstructionStream $?stream))
 			(object (is-a StoreInstruction) (ID ?targ) (DestinationRegisters ?reg))
 			=>
-			(send ?sched .MarkStoreScheduled ?targ ?reg 1))
+			(object-pattern-match-delay 
+			 (modify-instance ?sched (Success $?rest) (Scheduled $?s ?targ ?reg)
+			  (InstructionStream $?stream ?targ))))
 ;------------------------------------------------------------------------------
 (defrule FinishedPopulatingInstructionGroup-AssertReset
 			(declare (salience 200))
@@ -239,9 +241,9 @@
 									(Failure $?elements))
 			=>
 			(retract ?fct)
-			(assert (Perform Schedule ?n for ?p))
-			(modify-instance ?sched (Contents ?elements) (Failure))
-			(assert (Reset scheduling process)))
+			(assert (Perform Schedule ?n for ?p)
+			        (Reset scheduling process))
+			(modify-instance ?sched (Contents ?elements) (Failure)))
 ;------------------------------------------------------------------------------
 (defrule ResetSchedulingProcess
 			(declare (salience -10))
@@ -288,7 +290,7 @@
 			(declare (salience -26))
 			(Stage WavefrontSchedule $?)
 			(Substage LLVMUpdate $?)
-			?fct <- (Update style for ? is $?)
+			?fct <- (Update style for ?t is $?lasers)
 			=>
 			(retract ?fct))
 ;------------------------------------------------------------------------------
