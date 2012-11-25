@@ -85,13 +85,21 @@
 			(Substage Rename $?)
       ?fct <- ({ clips ! ?from => ?to for ?symbol $?rest })
 			?inst <- (object (is-a Instruction) (ID ?symbol) 
-								  (Operands $?operands))
+								  (Operands $?operands) (LocalDependencies $?locDep)
+								  (NonLocalDependencies $?nLocDep))
 			=>
-			(modify-instance ?inst (Operands))
+			(modify-instance ?inst (Operands) (LocalDependencies) 
+			 (NonLocalDependencies))
 			(retract ?fct)
       (assert ({ clips ! ?from => ?to for $?rest })
               ({ clips ! ?from => ?to replacement ?symbol 
-               operands $?operands })))
+               operands $?operands })
+				  ({ env: clips translation: ?from => ?to action: replacement
+					  in: ?symbol type: local-dependencies
+					  contents: $?locDep })
+				  ({ env: clips translation: ?from => ?to action: replacement
+						in: ?symbol type: non-local-dependencies
+						contents: $?nLocDep })))
 ;------------------------------------------------------------------------------
 (defrule ReplaceUsesInCLIPS-End
 			(declare (salience -1))
@@ -100,6 +108,86 @@
       ?fct <- ({ clips ! ?from => ?to for })
 			=>
 			(retract ?fct))
+;------------------------------------------------------------------------------
+(defrule ReplaceIndividualLocalDependencyEntries-NoMatch
+ (declare (salience -2))
+  (Stage WavefrontSchedule $?)
+  (Substage Rename $?)
+  ?fct <- ({
+	  	env: clips
+		translation: ?from => ?to 
+		action: replacement
+		in: ?symbol 
+		type: local-dependencies
+		contents: ?curr&~?from $?rest
+	  })
+  ?inst <- (object (is-a Instruction) (ID ?symbol))
+  =>
+  (object-pattern-match-delay
+  (slot-insert$ ?inst LocalDependencies 1 ?curr)
+  (retract ?fct)
+  (assert ({ env: clips translation: ?from => ?to action: replacement in:
+			  ?symbol type: local-dependencies contents: $?rest }))))
+;------------------------------------------------------------------------------
+(defrule ReplaceIndividualLocalDependencyEntries-Match
+ (declare (salience -2))
+  (Stage WavefrontSchedule $?)
+  (Substage Rename $?)
+  ?fct <- ({
+	  	env: clips
+		translation: ?from => ?to 
+		action: replacement
+		in: ?symbol 
+		type: local-dependencies
+		contents: ?from $?rest
+	  })
+  ?inst <- (object (is-a Instruction) (ID ?symbol))
+  =>
+  (object-pattern-match-delay
+  (slot-insert$ ?inst LocalDependencies 1 ?to)
+  (retract ?fct)
+  (assert ({ env: clips translation: ?from => ?to action: replacement in:
+			  ?symbol type: local-dependencies contents: $?rest }))))
+;------------------------------------------------------------------------------
+(defrule ReplaceIndividualNonLocalDependencyEntries-NoMatch
+ (declare (salience -2))
+  (Stage WavefrontSchedule $?)
+  (Substage Rename $?)
+  ?fct <- ({
+	  	env: clips
+		translation: ?from => ?to 
+		action: replacement
+		in: ?symbol 
+		type: non-local-dependencies
+		contents: ?curr&~?from $?rest
+	  })
+  ?inst <- (object (is-a Instruction) (ID ?symbol))
+  =>
+  (object-pattern-match-delay
+  (slot-insert$ ?inst NonLocalDependencies 1 ?curr)
+  (retract ?fct)
+  (assert ({ env: clips translation: ?from => ?to action: replacement in:
+			  ?symbol type: local-dependencies contents: $?rest }))))
+;------------------------------------------------------------------------------
+(defrule ReplaceIndividualNonLocalDependencyEntries-Match
+ (declare (salience -2))
+  (Stage WavefrontSchedule $?)
+  (Substage Rename $?)
+  ?fct <- ({
+	  	env: clips
+		translation: ?from => ?to 
+		action: replacement
+		in: ?symbol 
+		type: non-local-dependencies
+		contents: ?from $?rest
+	  })
+  ?inst <- (object (is-a Instruction) (ID ?symbol))
+  =>
+  (object-pattern-match-delay
+  (slot-insert$ ?inst NonLocalDependencies 1 ?to)
+  (retract ?fct)
+  (assert ({ env: clips translation: ?from => ?to action: replacement in:
+			  ?symbol type: non-local-dependencies contents: $?rest }))))
 ;------------------------------------------------------------------------------
 (defrule ReplaceIndividualInstructionUses-NoMatch
 			(declare (salience -2))
