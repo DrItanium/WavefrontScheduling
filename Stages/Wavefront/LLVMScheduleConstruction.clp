@@ -38,7 +38,7 @@
 			;strange that ?last is being incorporated into $?q
 			(retract ?fct)
 			(assert (Update style for ?e is ?lastPhi))
-			(make-instance (gensym*) of Schedule (Parent ?e) 
+			(make-instance of Schedule (Parent ?e) 
 								(Contents ?firstNonPhi ?instructions)))
 ;------------------------------------------------------------------------------
 (defrule ConstructScheduleObjectForBlock-DoesntHavePhis
@@ -54,7 +54,7 @@
 			=>
 			(retract ?fct)
 			(assert (Update style for ?e is))
-			(make-instance (gensym*) of Schedule (Parent ?e) 
+			(make-instance of Schedule (Parent ?e) 
 								(Contents ?firstNonPhi ?instructions)))
 ;------------------------------------------------------------------------------
 (defrule ConstructScheduleObjectForBlock-TerminatorOnly
@@ -100,14 +100,13 @@
 			We can always assume they are ready to go too!"
 			(Stage WavefrontSchedule $?)
 			(Substage ScheduleObjectCreation $?)
-			?schedObj <- (object (is-a Schedule) (ID ?n) (Parent ?p) (Scheduled
-					$?s))
+			?schedObj <- (object (is-a Schedule) (ID ?n) (Parent ?p) 
+				(Scheduled $?s))
 			(object (is-a BasicBlock) (ID ?p) (Contents $? ?c $?))
 			(object (is-a PhiNode) (ID ?c))
 			(test (not (member$ ?c ?s)))
-							;(send ?schedObj get-Scheduled))))
 			=>
-			(slot-insert$ ?schedObj Scheduled 1 ?c))
+			(modify-instance ?schedObj (Scheduled $?s ?c)))
 ;------------------------------------------------------------------------------
 (defrule PrescheduleNonLocals
 			"Marks all non local instructions as already scheduled. With the way 
@@ -120,9 +119,8 @@
 			?inst <- (object (is-a Instruction) (ID ?c) (Parent ?p)
 								  (NonLocalDependencies $? ?d $?))
 			(test (not (member$ ?d ?s)))
-			;(test (not (member$ ?d (send ?schedObj get-Scheduled))))
 			=>
-			(slot-insert$ ?schedObj Scheduled 1 ?d))
+			(modify-instance ?schedObj (Scheduled $?s ?d)))
 ;------------------------------------------------------------------------------
 (defrule AssertPerformScheduling
  (declare (salience -1))
@@ -240,14 +238,16 @@
 			?sched <- (object (is-a Schedule) (ID ?n) (Parent ?p) (Contents) 
 									(Failure $?elements))
 			=>
+			(object-pattern-match-delay
 			(retract ?fct)
 			(assert (Perform Schedule ?n for ?p)
 			        (Reset scheduling process))
-			(modify-instance ?sched (Contents ?elements) (Failure)))
+			(modify-instance ?sched (Contents ?elements) (Failure))))
 ;------------------------------------------------------------------------------
 (defrule ResetSchedulingProcess
 			(declare (salience -10))
 			(Stage WavefrontSchedule $?)
+			(Substage ResetScheduling $?)
 			?f0 <- (Substage ResetScheduling $?rest)
 			?f1 <- (Reset scheduling process)
 			=>
@@ -266,10 +266,11 @@
 											 $?rest))
 			(object (is-a TerminatorInstruction) (ID ?last) (Pointer ?tPtr))
 			=>
+			(object-pattern-match-delay
 			(modify-instance ?bb 
 								  (Contents $?before ?lastPhi ?stream ?last $?rest))
 			(llvm-schedule-block ?tPtr (symbol-to-pointer-list ?stream))
-			(retract ?f1 ?f2))
+			(retract ?f1 ?f2)))
 ;------------------------------------------------------------------------------
 (defrule FinishLLVMEncoding-NoPhi
 			(declare (salience -12))
@@ -282,9 +283,10 @@
 			(object (is-a TerminatorInstruction) (Parent ?p) (ID ?last) 
 					  (Pointer ?tPtr))
 			=>
+			(object-pattern-match-delay
 			(modify-instance ?bb (Contents ?stream ?last))
 			(llvm-schedule-block ?tPtr (symbol-to-pointer-list ?stream))
-			(retract ?f1 ?f2))
+			(retract ?f1 ?f2)))
 ;------------------------------------------------------------------------------
 (defrule RetractUpdateStyleHint
 			(declare (salience -26))
