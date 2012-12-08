@@ -26,63 +26,79 @@
 ; MergeRules.clp - Contains all of the merge rules used in the analysis stages
 ; Written by Joshua Scoggins (11/18/2012)
 ;------------------------------------------------------------------------------
-(defrule MergeConsumers
+(defrule MergeDeclarations
          (Stage ExtendedMemoryAnalysis-Merge $?)
-         ?f0 <- (Instruction ?a consumes ?id)
-         ?f1 <- (Instruction ?b&~?a consumes ?id)
-         =>
-         (retract ?f0 ?f1)
-         (assert (Instruction ?id consumed ?a ?b)))
+			?f0 <- ({ env: clips
+				       action: dependency-announce
+						 type: ?type
+						 target: ?a
+						 other: ?id })
+			?f1 <- ({ env: clips
+				       action: dependency-announce
+						 type: ?type
+						 target: ?b&~?a
+						 other: ?id })
+			=>
+			(retract ?f0 ?f1)
+			(assert ({ env: clips
+						  action: dependency-set
+						  type: ?type
+						  target: ?id
+						  set: { ?a ?b } })))
 ;------------------------------------------------------------------------------
-(defrule MergeProducers
+(defrule MergeDependencySets
          (Stage ExtendedMemoryAnalysis-Merge $?)
-         ?f0 <- (Instruction ?a produces ?id)
-         ?f1 <- (Instruction ?b&~?a produces ?id)
-         =>
-         (retract ?f0 ?f1)
-         (assert (Instruction ?id produced ?a ?b)))
+			?f0 <- ({ env: clips
+						 action: dependency-set
+						 type: ?type
+						 target: ?id
+						 set: { $?s0 } })
+			?f1 <- ({ env: clips
+						 action: dependency-set
+						 type: ?type
+						 target: ?id
+						 set: { $?s1 } })
+			(test (neq ?f0 ?f1))
+			=>
+			(retract ?f0 ?f1)
+			(assert ({ env: clips
+						  action: dependency-set
+						  type: ?type
+						  target: ?id
+						  set: { $?s0 $?s1 } })))
 ;------------------------------------------------------------------------------
-(defrule MergeConsumers-Multi
+(defrule MergeSingleDeclaration
+         (declare (salience -1))
          (Stage ExtendedMemoryAnalysis-Merge $?)
-         ?f0 <- (Instruction ?id consumed $?a)
-         ?f1 <- (Instruction ?id consumed $?b)
-         (test (neq ?f0 ?f1))
-         =>
-         (retract ?f0 ?f1)
-         (assert (Instruction ?id consumed $?a $?b)))
-;------------------------------------------------------------------------------
-(defrule MergeProducers-Multi
-         (Stage ExtendedMemoryAnalysis-Merge $?)
-         ?f0 <- (Instruction ?id produced $?a)
-         ?f1 <- (Instruction ?id produced $?b)
-         (test (neq ?f0 ?f1))
-         =>
-         (retract ?f0 ?f1)
-         (assert (Instruction ?id produced $?a $?b)))
-;------------------------------------------------------------------------------
-(defrule MergeConsumers-Only
-         (declare (salience -2))
-         (Stage ExtendedMemoryAnalysis-Merge $?)
-         ?f0 <- (Instruction ?a consumes ?b)
-         =>
-         (retract ?f0)
-         (assert (Instruction ?b consumed ?a)))
-;------------------------------------------------------------------------------
-(defrule MergeProducers-Only
-         (declare (salience -2))
-         (Stage ExtendedMemoryAnalysis-Merge $?)
-         ?f0 <- (Instruction ?a produces ?b)
-         =>
-         (retract ?f0)
-         (assert (Instruction ?b produced ?a)))
+			?f0 <- ({ env: clips
+				       action: dependency-announce
+						 type: ?type
+						 target: ?a
+						 other: ?id })
+			=>
+			(retract ?f0)
+			(assert ({ env: clips
+						  action: dependency-set
+						  type: ?type
+						  target: ?id
+						  set: { ?a } })))
+
 ;------------------------------------------------------------------------------
 (defrule InjectConsumers-Producers-And-LocalDependencies
          "Performs the actions of InjectConsumers and
          InjectProducersAndLocalDependencies in a single rule fire."
          (declare (salience 1))
          (Stage ExtendedMemoryAnalysis-Inject $?)
-         ?f0 <- (Instruction ?id consumed $?t0)
-         ?f1 <- (Instruction ?id produced $?t1)
+			?f0 <- ({ env: clips
+				       action: dependency-set
+						 type: consumes
+						 target: ?id
+						 set: { $?t0 } })
+			?f1 <- ({ env: clips
+				       action: dependency-set
+						 type: produces 
+						 target: ?id
+						 set: { $?t1 } })
          ?inst <- (object (is-a Instruction) (ID ?id) (Consumers $?c) 
                           (Producers $?p) (LocalDependencies $?ld))
          =>
@@ -105,7 +121,11 @@
 (defrule InjectConsumers
          "Adds a given consumer to the target instruction"
          (Stage ExtendedMemoryAnalysis-Inject $?)
-         ?fct <- (Instruction ?id consumed $?targets)
+			?fct <- ({ env: clips
+				       action: dependency-set
+						 type: consumes
+						 target: ?id
+						 set: { $?targets } })
          ?inst <- (object (is-a Instruction) (ID ?id) (Consumers $?cs))
          =>
          (retract ?fct)
@@ -119,7 +139,11 @@
 (defrule InjectProducersAndLocalDependencies
          "Adds a given producer to the target instruction."
          (Stage ExtendedMemoryAnalysis-Inject $?)
-         ?fct <- (Instruction ?id produced $?targets)
+			?fct <- ({ env: clips
+				        action: dependency-set
+						  type: produces 
+						  target: ?id
+						  set: { $?targets } })
          ?inst <- (object (is-a Instruction) (ID ?id) (Producers $?ps)
                           (LocalDependencies $?ld))
          =>
