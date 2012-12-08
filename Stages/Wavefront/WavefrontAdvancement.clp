@@ -121,11 +121,11 @@
 									  Ponder 
 									  Rename 
 									  DependencyAnalysis 
-									  ScheduleObjectCreation 
-									  ScheduleObjectUsage 
-									  ResetScheduling 
-									  InitLLVMUpdate
-									  LLVMUpdate 
+									  ;ScheduleObjectCreation 
+									  ;ScheduleObjectUsage 
+									  ;ResetScheduling 
+									  ;InitLLVMUpdate
+									  ;LLVMUpdate 
 									  AdvanceInit 
 									  AdvanceIdentify
 									  Advance
