@@ -28,41 +28,35 @@
 ;------------------------------------------------------------------------------
 (defrule MergeDeclarations
          (Stage ExtendedMemoryAnalysis-Merge $?)
-			?f0 <- ({ env: clips
-				       action: dependency-announce
+			?f0 <- ({ action: dependency-announce
 						 type: ?type
 						 target: ?a
 						 other: ?id })
-			?f1 <- ({ env: clips
-				       action: dependency-announce
+			?f1 <- ({ action: dependency-announce
 						 type: ?type
 						 target: ?b&~?a
 						 other: ?id })
 			=>
 			(retract ?f0 ?f1)
-			(assert ({ env: clips
-						  action: dependency-set
+			(assert ({ action: dependency-set
 						  type: ?type
 						  target: ?id
 						  set: { ?a ?b } })))
 ;------------------------------------------------------------------------------
 (defrule MergeDependencySets
          (Stage ExtendedMemoryAnalysis-Merge $?)
-			?f0 <- ({ env: clips
-						 action: dependency-set
+			?f0 <- ({ action: dependency-set
 						 type: ?type
 						 target: ?id
 						 set: { $?s0 } })
-			?f1 <- ({ env: clips
-						 action: dependency-set
+			?f1 <- ({ action: dependency-set
 						 type: ?type
 						 target: ?id
 						 set: { $?s1 } })
 			(test (neq ?f0 ?f1))
 			=>
 			(retract ?f0 ?f1)
-			(assert ({ env: clips
-						  action: dependency-set
+			(assert ({ action: dependency-set
 						  type: ?type
 						  target: ?id
 						  set: { $?s0 $?s1 } })))
@@ -70,15 +64,13 @@
 (defrule MergeSingleDeclaration
          (declare (salience -1))
          (Stage ExtendedMemoryAnalysis-Merge $?)
-			?f0 <- ({ env: clips
-				       action: dependency-announce
+			?f0 <- ({ action: dependency-announce
 						 type: ?type
 						 target: ?a
 						 other: ?id })
 			=>
 			(retract ?f0)
-			(assert ({ env: clips
-						  action: dependency-set
+			(assert ({ action: dependency-set
 						  type: ?type
 						  target: ?id
 						  set: { ?a } })))
@@ -89,13 +81,11 @@
          InjectProducersAndLocalDependencies in a single rule fire."
          (declare (salience 1))
          (Stage ExtendedMemoryAnalysis-Inject $?)
-			?f0 <- ({ env: clips
-				       action: dependency-set
+			?f0 <- ({ action: dependency-set
 						 type: consumes
 						 target: ?id
 						 set: { $?t0 } })
-			?f1 <- ({ env: clips
-				       action: dependency-set
+			?f1 <- ({ action: dependency-set
 						 type: produces 
 						 target: ?id
 						 set: { $?t1 } })
@@ -121,11 +111,10 @@
 (defrule InjectConsumers
          "Adds a given consumer to the target instruction"
          (Stage ExtendedMemoryAnalysis-Inject $?)
-			?fct <- ({ env: clips
-				       action: dependency-set
-						 type: consumes
-						 target: ?id
-						 set: { $?targets } })
+			?fct <- ({ action: dependency-set
+						  type: consumes
+						  target: ?id
+						  set: { $?targets } })
          ?inst <- (object (is-a Instruction) (ID ?id) (Consumers $?cs))
          =>
          (retract ?fct)
@@ -139,8 +128,7 @@
 (defrule InjectProducersAndLocalDependencies
          "Adds a given producer to the target instruction."
          (Stage ExtendedMemoryAnalysis-Inject $?)
-			?fct <- ({ env: clips
-				        action: dependency-set
+			?fct <- ({ action: dependency-set
 						  type: produces 
 						  target: ?id
 						  set: { $?targets } })
