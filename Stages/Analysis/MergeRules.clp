@@ -26,69 +26,117 @@
 ; MergeRules.clp - Contains all of the merge rules used in the analysis stages
 ; Written by Joshua Scoggins (11/18/2012)
 ;------------------------------------------------------------------------------
-(defrule MergeDeclarations
+(defrule MergeDeclarations-Produces
          (Stage ExtendedMemoryAnalysis-Merge $?)
 			?f0 <- ({ action: dependency-announce
-						 type: ?type
+						 type: produces 
 						 target: ?a
 						 other: ?id })
 			?f1 <- ({ action: dependency-announce
-						 type: ?type
+						 type: produces 
 						 target: ?b&~?a
 						 other: ?id })
 			=>
 			(retract ?f0 ?f1)
-			(assert ({ action: dependency-set
-						  type: ?type
+			(assert (action: dependency-set
+						  type: produces 
 						  target: ?id
-						  set: { ?a ?b } })))
+						  set: { ?a ?b })))
 ;------------------------------------------------------------------------------
-(defrule MergeDependencySets
+(defrule MergeDeclarations-Consumes
          (Stage ExtendedMemoryAnalysis-Merge $?)
-			?f0 <- ({ action: dependency-set
-						 type: ?type
+			?f0 <- ({ action: dependency-announce
+						 type: consumes 
+						 target: ?a
+						 other: ?id })
+			?f1 <- ({ action: dependency-announce
+						 type: consumes 
+						 target: ?b&~?a
+						 other: ?id })
+			=>
+			(retract ?f0 ?f1)
+			(assert (action: dependency-set
+						  type: consumes 
+						  target: ?id
+						  set: { ?a ?b })))
+;------------------------------------------------------------------------------
+(defrule MergeDependencySets-Produces
+         (Stage ExtendedMemoryAnalysis-Merge $?)
+			?f0 <- (action: dependency-set
+						 type: produces
 						 target: ?id
-						 set: { $?s0 } })
-			?f1 <- ({ action: dependency-set
-						 type: ?type
+						 set: { $?s0 })
+			?f1 <- (action: dependency-set
+						 type: produces
 						 target: ?id
-						 set: { $?s1 } })
+						 set: { $?s1 })
 			(test (neq ?f0 ?f1))
 			=>
 			(retract ?f0 ?f1)
-			(assert ({ action: dependency-set
-						  type: ?type
+			(assert (action: dependency-set
+						  type: produces
 						  target: ?id
-						  set: { $?s0 $?s1 } })))
+						  set: { $?s0 $?s1 })))
 ;------------------------------------------------------------------------------
-(defrule MergeSingleDeclaration
+(defrule MergeDependencySets-Consumes
+         (Stage ExtendedMemoryAnalysis-Merge $?)
+			?f0 <- (action: dependency-set
+						 type: consumes
+						 target: ?id
+						 set: { $?s0 })
+			?f1 <- (action: dependency-set
+						 type: consumes
+						 target: ?id
+						 set: { $?s1 })
+			(test (neq ?f0 ?f1))
+			=>
+			(retract ?f0 ?f1)
+			(assert (action: dependency-set
+						  type: consumes
+						  target: ?id
+						  set: { $?s0 $?s1 })))
+;------------------------------------------------------------------------------
+(defrule MergeSingleDeclaration-Produces
          (declare (salience -1))
          (Stage ExtendedMemoryAnalysis-Merge $?)
 			?f0 <- ({ action: dependency-announce
-						 type: ?type
+						 type: produces
 						 target: ?a
 						 other: ?id })
 			=>
 			(retract ?f0)
-			(assert ({ action: dependency-set
-						  type: ?type
+			(assert (action: dependency-set
+						  type: produces
 						  target: ?id
-						  set: { ?a } })))
-
+						  set: { ?a })))
+;------------------------------------------------------------------------------
+(defrule MergeSingleDeclaration-Consumes
+         (declare (salience -1))
+         (Stage ExtendedMemoryAnalysis-Merge $?)
+			?f0 <- ({ action: dependency-announce
+						 type: consumes
+						 target: ?a
+						 other: ?id })
+			=>
+			(retract ?f0)
+			(assert (action: dependency-set
+						  type: consumes
+						  target: ?id
+						  set: { ?a })))
 ;------------------------------------------------------------------------------
 (defrule InjectConsumers-Producers-And-LocalDependencies
          "Performs the actions of InjectConsumers and
          InjectProducersAndLocalDependencies in a single rule fire."
          (declare (salience 1))
          (Stage ExtendedMemoryAnalysis-Inject $?)
-			?f0 <- ({ action: dependency-set
-						 type: consumes
-						 target: ?id
-						 set: { $?t0 } })
-			?f1 <- ({ action: dependency-set
-						 type: produces 
-						 target: ?id
-						 set: { $?t1 } })
+			?f0 <- (action: dependency-set
+					  type: consumes
+					  target: ?id
+					  set: { $?t0 })
+			?f1 <- (action: dependency-set
+					  type: produces 
+					  target: ?id
+					  set: { $?t1 })
          ?inst <- (object (is-a Instruction) (ID ?id) (Consumers $?c) 
                           (Producers $?p) (LocalDependencies $?ld))
          =>
@@ -111,10 +159,10 @@
 (defrule InjectConsumers
          "Adds a given consumer to the target instruction"
          (Stage ExtendedMemoryAnalysis-Inject $?)
-			?fct <- ({ action: dependency-set
+			?fct <- (action: dependency-set
 						  type: consumes
 						  target: ?id
-						  set: { $?targets } })
+						  set: { $?targets })
          ?inst <- (object (is-a Instruction) (ID ?id) (Consumers $?cs))
          =>
          (retract ?fct)
@@ -128,10 +176,10 @@
 (defrule InjectProducersAndLocalDependencies
          "Adds a given producer to the target instruction."
          (Stage ExtendedMemoryAnalysis-Inject $?)
-			?fct <- ({ action: dependency-set
+			?fct <- (action: dependency-set
 						  type: produces 
 						  target: ?id
-						  set: { $?targets } })
+						  set: { $?targets })
          ?inst <- (object (is-a Instruction) (ID ?id) (Producers $?ps)
                           (LocalDependencies $?ld))
          =>
