@@ -147,12 +147,12 @@
          (object-pattern-match-delay
          (progn$ (?target ?t0)
                  (if (not (member$ ?target ?cs)) then
-                   (bind ?cs (insert$ ?cs 1 ?target))))
+						(bind ?cs (create$ ?cs ?target))))
          (progn$ (?target ?t1)
                  (if (not (member$ ?target ?lds)) then
-                   (bind ?lds (insert$ ?lds 1 ?target)))
+						(bind ?lds (create$ ?lds ?target)))
                  (if (not (member$ ?target ?ps)) then
-                   (bind ?ps (insert$ ?ps 1 ?target))))
+						 (bind ?ps (create$ ?ps ?target))))
          (modify-instance ?inst (Consumers ?cs) (Producers ?ps) 
                           (LocalDependencies ?lds))))
 ;------------------------------------------------------------------------------
@@ -166,12 +166,15 @@
          ?inst <- (object (is-a Instruction) (ID ?id) (Consumers $?cs))
          =>
          (retract ?fct)
-         (bind ?cons $?cs)
          (object-pattern-match-delay
+			(if (= (length$ ?cs) 0) then
+			    (modify-instance ?inst (Consumers $?targets))
+				 else
+             (bind ?cons $?cs)
          (progn$ (?target ?targets)
                  (if (not (member$ ?target ?cons)) then
-                   (bind ?cons (insert$ ?cons 1 ?target))))
-         (modify-instance ?inst (Consumers ?cons))))
+						   (bind ?cons (create$ ?cons ?target))))
+         (modify-instance ?inst (Consumers ?cons)))))
 ;------------------------------------------------------------------------------
 (defrule InjectProducersAndLocalDependencies
          "Adds a given producer to the target instruction."
@@ -189,9 +192,9 @@
          (object-pattern-match-delay
          (progn$ (?target ?targets)
                  (if (not (member$ ?target ?lds)) then
-                   (bind ?lds (insert$ ?lds 1 ?target)))
+						 (bind ?lds (create$ ?lds ?target)))
                  (if (not (member$ ?target ?prods)) then
-                   (bind ?prods (insert$ ?prods 1 ?target))))
+						 (bind ?prods (create$ ?prods ?target))))
          (modify-instance ?inst (Producers ?prods) (LocalDependencies ?lds))))
 ;------------------------------------------------------------------------------
 (defrule SetifyInstructionProducers
