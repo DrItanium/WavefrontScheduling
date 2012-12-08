@@ -34,13 +34,11 @@
                         (ArgumentOperands $? ?o $?))
          (object (is-a Instruction) (ID ?o) (Parent ?p))
          =>
-			(assert ({ env: clips 
-			           action: dependency-announce
+			(assert ({ action: dependency-announce
 				        type: produces
 				        target: ?o
 				        other: ?t0 })
-			        ({ env: clips
-			           action: dependency-announce
+			        ({ action: dependency-announce
 			       	  type: consumes
 			       	  target: ?t0
 			       	  other: ?o })))
@@ -51,13 +49,11 @@
                         (Operands $? ?o $?))
          (object (is-a Instruction) (ID ?o) (Parent ?p))
          =>
-			(assert ({ env: clips 
-			           action: dependency-announce
+			(assert ({ action: dependency-announce
 				        type: produces
 				        target: ?o
 				        other: ?t0 })
-			        ({ env: clips
-			           action: dependency-announce
+			        ({ action: dependency-announce
 			       	  type: consumes
 			       	  target: ?t0
 			       	  other: ?o })))
@@ -69,13 +65,11 @@
                  (MayWriteToMemory TRUE))
          =>
          (progn$ (?n1 ?before)
-			(assert ({ env: clips 
-			           action: dependency-announce
+			(assert ({ action: dependency-announce
 				        type: produces
 				        target: ?n1
 				        other: ?n0 })
-			        ({ env: clips
-			           action: dependency-announce
+			        ({ action: dependency-announce
 			       	  type: consumes
 			       	  target: ?n0
 			       	  other: ?n1 }))))
@@ -87,13 +81,11 @@
                  (MayHaveSideEffects TRUE))
          =>
          (progn$ (?n1 ?a)
-			(assert ({ env: clips 
-			           action: dependency-announce
+			(assert ({ action: dependency-announce
 				        type: produces
 				        target: ?n1
 				        other: ?n0 })
-			        ({ env: clips
-			           action: dependency-announce
+			        ({ action: dependency-announce
 			       	  type: consumes
 			       	  target: ?n0
 			       	  other: ?n1 }))))
@@ -106,23 +98,19 @@
          (object (is-a CallInstruction) (ID ?name) (Parent ?p)
                  (MayWriteToMemory TRUE))
          =>
-			(assert ({ env: clips
-						  action: call-barrier
+			(assert ({ action: call-barrier
 						  type: element
 						  target: ?p }))
          (progn$ (?following ?rest)
-			(assert ({ env: clips 
-			           action: dependency-announce
+			(assert ({ action: dependency-announce
 				        type: produces
 				        target: ?name
 				        other: ?following })
-			       ; ({ env: clips
-			       ;    action: dependency-announce
+			       ; ({ action: dependency-announce
 			       ;	  type: consumes
 			       ;	  target: ?following
 			       ;	  other: ?name })
-			        ({ env: clips
-						  action: call-dependency
+			        ({ action: call-dependency
 						  type: instruction
 						  target: ?following }))))
 ;------------------------------------------------------------------------------
@@ -134,23 +122,19 @@
          (object (is-a CallInstruction) (ID ?name) (Parent ?p) 
                  (IsInlineAsm TRUE))
          =>
-			(assert ({ env: clips
-						  action: call-barrier
+			(assert ({ action: call-barrier
 						  type: element
 						  target: ?p }))
          (progn$ (?following ?rest)
-			(assert ({ env: clips 
-			           action: dependency-announce
+			(assert ({ action: dependency-announce
 				        type: produces
 				        target: ?name
 				        other: ?following })
-			       ; ({ env: clips
-			       ;    action: dependency-announce
-			       ;	  type: consumes
-			       ;	  target: ?following
-			       ;	  other: ?name })
-			        ({ env: clips
-						  action: call-dependency
+			       ; ({ action: dependency-announce
+			       ;	   type: consumes
+			       ;	   target: ?following
+			       ;	   other: ?name })
+			        ({ action: call-dependency
 						  type: instruction
 						  target: ?following }))))
 ;------------------------------------------------------------------------------
@@ -162,31 +146,26 @@
                  (MayHaveSideEffects TRUE)) 
          (object (is-a BasicBlock) (ID ?p) (Contents $? ?name $?rest))
          =>
-			(assert ({ env: clips
-						  action: call-barrier
+			(assert ({ action: call-barrier
 						  type: element
 						  target: ?p }))
          (progn$ (?following ?rest)
-			(assert ({ env: clips 
-			           action: dependency-announce
+			(assert ({ action: dependency-announce
 				        type: produces
 				        target: ?name
 				        other: ?following })
-			       ; ({ env: clips
-			       ;    action: dependency-announce
-			       ;	  type: consumes
-			       ;	  target: ?following
-			       ;	  other: ?name })
-			        ({ env: clips
-						  action: call-dependency
+			       ; ({ action: dependency-announce
+			       ;	   type: consumes
+			       ;	   target: ?following
+			       ;	   other: ?name })
+			        ({ action: call-dependency
 						  type: instruction
 						  target: ?following }))))
 ;------------------------------------------------------------------------------
 (defrule FlagCallBarrierForDiplomat-HasParent
          ;(declare (salience -10))
          (Stage Analysis-Update $?)
-			?fct <- ({ env: clips 
-				        action: call-barrier
+			?fct <- ({ action: call-barrier
 						  type: element
 						  target: ?z })
          ?d <- (object (is-a Diplomat) (ID ?z) (Parent ?p) 
@@ -194,8 +173,7 @@
          (exists (object (is-a Diplomat) (ID ?p)))
          =>
          (retract ?fct)
-			(assert ({ env: clips
-						  action: call-barrier
+			(assert ({ action: call-barrier
 						  type: element
 						  target: ?p }))
          (modify-instance ?d (HasCallBarrier TRUE)))
@@ -203,8 +181,7 @@
 (defrule PropagateCallBarrierForDiplomat-HasParent
          ;(declare (salience -10))
          (Stage Analysis-Update $?)
-			?fct <- ({ env: clips 
-				        action: call-barrier
+			?fct <- ({ action: call-barrier
 						  type: element
 						  target: ?z })
          ?d <- (object (is-a Diplomat) (ID ?z) (Parent ?p) 
@@ -212,16 +189,14 @@
          (exists (object (is-a Diplomat) (ID ?p)))
          =>
          (retract ?fct)
-			(assert ({ env: clips
-						  action: call-barrier
+			(assert ({ action: call-barrier
 						  type: element
 						  target: ?p })))
 ;------------------------------------------------------------------------------
 (defrule FlagCallBarrierForDiplomat-NoParent
          ;(declare (salience -10))
          (Stage Analysis-Update $?)
-			?fct <- ({ env: clips 
-				        action: call-barrier
+			?fct <- ({ action: call-barrier
 						  type: element
 						  target: ?z })
          ?d <- (object (is-a Diplomat) (ID ?z) (Parent ?p) 
@@ -234,8 +209,7 @@
 (defrule PropagateCallBarrierForDiplomat-NoParent
          ;(declare (salience -10))
          (Stage Analysis-Update $?)
-			?fct <- ({ env: clips 
-				        action: call-barrier
+			?fct <- ({ action: call-barrier
 						  type: element
 						  target: ?z })
          ?d <- (object (is-a Diplomat) (ID ?z) (Parent ?p) 
@@ -246,8 +220,7 @@
 ;------------------------------------------------------------------------------
 (defrule MarkHasACallDependency-Set
          (Stage Analysis-Update $?)
-			?fct <- ({ env: clips
-						  action: call-dependency
+			?fct <- ({ action: call-dependency
 						  type: instruction
 						  target: ?target })
          ?inst <- (object (is-a Instruction) (ID ?target) 
@@ -258,8 +231,7 @@
 ;------------------------------------------------------------------------------
 (defrule MarkHasACallDependency-Ignore
          (Stage Analysis-Update $?)
-			?fct <- ({ env: clips
-						  action: call-dependency
+			?fct <- ({ action: call-dependency
 						  type: instruction
 						  target: ?target })
          ?inst <- (object (is-a Instruction) (ID ?target) 
@@ -275,13 +247,11 @@
                  (TimeIndex ?ti1&:(< ?ti0 ?ti1)) (MemoryTarget ?sym1))
          (test (or (eq ?sym0 ?sym1) (eq ?sym0 UNKNOWN)))
          =>
-			(assert ({ env: clips 
-			           action: dependency-announce
+			(assert ({ action: dependency-announce
 				        type: produces
 				        target: ?t0
 				        other: ?t1 })
-			        ({ env: clips
-			           action: dependency-announce
+			        ({ action: dependency-announce
 			       	  type: consumes
 			       	  target: ?t1
 			       	  other: ?t0 })))
@@ -294,13 +264,11 @@
                  (TimeIndex ?ti1&:(< ?ti0 ?ti1)) (MemoryTarget ?sym1))
          (test (or (eq ?sym0 ?sym1) (eq ?sym0 UNKNOWN)))
          =>
-			(assert ({ env: clips 
-			           action: dependency-announce
+			(assert ({ action: dependency-announce
 				        type: produces
 				        target: ?t0
 				        other: ?t1 })
-			        ({ env: clips
-			           action: dependency-announce
+			        ({ action: dependency-announce
 			       	  type: consumes
 			       	  target: ?t1
 			       	  other: ?t0 })))
@@ -313,13 +281,11 @@
                  (TimeIndex ?ti1&:(< ?ti0 ?ti1)) (MemoryTarget ?sym1))
          (test (or (eq ?sym0 ?sym1) (eq ?sym0 UNKNOWN)))
          =>
-			(assert ({ env: clips 
-			           action: dependency-announce
+			(assert ({ action: dependency-announce
 				        type: produces
 				        target: ?t0
 				        other: ?t1 })
-			        ({ env: clips
-			           action: dependency-announce
+			        ({ action: dependency-announce
 			       	  type: consumes
 			       	  target: ?t1
 			       	  other: ?t0 })))
