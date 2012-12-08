@@ -34,8 +34,16 @@
                         (ArgumentOperands $? ?o $?))
          (object (is-a Instruction) (ID ?o) (Parent ?p))
          =>
-         (assert (Instruction ?o produces ?t0)
-                 (Instruction ?t0 consumes ?o)))
+			(assert ({ env: clips 
+			           action: dependency-announce
+				        type: produces
+				        target: ?o
+				        other: ?t0 })
+			        ({ env: clips
+			           action: dependency-announce
+			       	  type: consumes
+			       	  target: ?t0
+			       	  other: ?o })))
 ;------------------------------------------------------------------------------
 (defrule MarkLocalDependency 
          (Stage Analysis $?)
@@ -43,8 +51,16 @@
                         (Operands $? ?o $?))
          (object (is-a Instruction) (ID ?o) (Parent ?p))
          =>
-         (assert (Instruction ?o produces ?t0)
-                 (Instruction ?t0 consumes ?o)))
+			(assert ({ env: clips 
+			           action: dependency-announce
+				        type: produces
+				        target: ?o
+				        other: ?t0 })
+			        ({ env: clips
+			           action: dependency-announce
+			       	  type: consumes
+			       	  target: ?t0
+			       	  other: ?o })))
 ;------------------------------------------------------------------------------
 (defrule MarkInstructionsThatHappenBeforeCall-WritesToMemory
          (Stage Analysis $?)
@@ -53,8 +69,16 @@
                  (MayWriteToMemory TRUE))
          =>
          (progn$ (?n1 ?before)
-                 (assert (Instruction ?n0 consumes ?n1)
-                         (Instruction ?n1 produces ?n0))))
+			(assert ({ env: clips 
+			           action: dependency-announce
+				        type: produces
+				        target: ?n1
+				        other: ?n0 })
+			        ({ env: clips
+			           action: dependency-announce
+			       	  type: consumes
+			       	  target: ?n0
+			       	  other: ?n1 }))))
 ;------------------------------------------------------------------------------
 (defrule MarkInstructionsThatHappenBeforeCall-HasSideEffects
          (Stage Analysis $?)
@@ -63,8 +87,16 @@
                  (MayHaveSideEffects TRUE))
          =>
          (progn$ (?n1 ?a)
-                 (assert (Instruction ?n0 consumes ?n1)
-                         (Instruction ?n1 produces ?n0))))
+			(assert ({ env: clips 
+			           action: dependency-announce
+				        type: produces
+				        target: ?n1
+				        other: ?n0 })
+			        ({ env: clips
+			           action: dependency-announce
+			       	  type: consumes
+			       	  target: ?n0
+			       	  other: ?n1 }))))
 ;------------------------------------------------------------------------------
 (defrule MarkCallInstructionDependency-ModifiesMemory
          "Creates a series of dependencies for all instructions following a 
@@ -74,11 +106,25 @@
          (object (is-a CallInstruction) (ID ?name) (Parent ?p)
                  (MayWriteToMemory TRUE))
          =>
-         (assert (Element ?p has a CallBarrier))
+			(assert ({ env: clips
+						  action: call-barrier
+						  type: element
+						  target: ?p }))
          (progn$ (?following ?rest)
-                 (assert (Instruction ?following has a CallDependency)
-                         ;(Instruction ?following consumes ?name)
-                         (Instruction ?name produces ?following))))
+			(assert ({ env: clips 
+			           action: dependency-announce
+				        type: produces
+				        target: ?name
+				        other: ?following })
+			       ; ({ env: clips
+			       ;    action: dependency-announce
+			       ;	  type: consumes
+			       ;	  target: ?following
+			       ;	  other: ?name })
+			        ({ env: clips
+						  action: call-dependency
+						  type: instruction
+						  target: ?following }))))
 ;------------------------------------------------------------------------------
 (defrule MarkCallInstructionDependency-InlineAsm
          "Creates a series of dependencies for all instructions following a 
@@ -88,11 +134,25 @@
          (object (is-a CallInstruction) (ID ?name) (Parent ?p) 
                  (IsInlineAsm TRUE))
          =>
-         (assert (Element ?p has a CallBarrier))
+			(assert ({ env: clips
+						  action: call-barrier
+						  type: element
+						  target: ?p }))
          (progn$ (?following ?rest)
-                 (assert (Instruction ?following has a CallDependency)
-                         ;(Instruction ?following consumes ?name)
-                         (Instruction ?name produces ?following))))
+			(assert ({ env: clips 
+			           action: dependency-announce
+				        type: produces
+				        target: ?name
+				        other: ?following })
+			       ; ({ env: clips
+			       ;    action: dependency-announce
+			       ;	  type: consumes
+			       ;	  target: ?following
+			       ;	  other: ?name })
+			        ({ env: clips
+						  action: call-dependency
+						  type: instruction
+						  target: ?following }))))
 ;------------------------------------------------------------------------------
 (defrule MarkCallInstructionDependency-SideEffects
          "Creates a series of dependencies for all instructions following a 
@@ -102,39 +162,68 @@
                  (MayHaveSideEffects TRUE)) 
          (object (is-a BasicBlock) (ID ?p) (Contents $? ?name $?rest))
          =>
-         (assert (Element ?p has a CallBarrier))
+			(assert ({ env: clips
+						  action: call-barrier
+						  type: element
+						  target: ?p }))
          (progn$ (?following ?rest)
-                 (assert (Instruction ?following has a CallDependency)
-                         ;(Instruction ?following consumes ?name)
-                         (Instruction ?name produces ?following))))
+			(assert ({ env: clips 
+			           action: dependency-announce
+				        type: produces
+				        target: ?name
+				        other: ?following })
+			       ; ({ env: clips
+			       ;    action: dependency-announce
+			       ;	  type: consumes
+			       ;	  target: ?following
+			       ;	  other: ?name })
+			        ({ env: clips
+						  action: call-dependency
+						  type: instruction
+						  target: ?following }))))
 ;------------------------------------------------------------------------------
 (defrule FlagCallBarrierForDiplomat-HasParent
          ;(declare (salience -10))
          (Stage Analysis-Update $?)
-         ?fct <- (Element ?z has a CallBarrier)
+			?fct <- ({ env: clips 
+				        action: call-barrier
+						  type: element
+						  target: ?z })
          ?d <- (object (is-a Diplomat) (ID ?z) (Parent ?p) 
                        (HasCallBarrier FALSE))
          (exists (object (is-a Diplomat) (ID ?p)))
          =>
          (retract ?fct)
-         (assert (Element ?p has a CallBarrier))
+			(assert ({ env: clips
+						  action: call-barrier
+						  type: element
+						  target: ?p }))
          (modify-instance ?d (HasCallBarrier TRUE)))
 ;------------------------------------------------------------------------------
 (defrule PropagateCallBarrierForDiplomat-HasParent
          ;(declare (salience -10))
          (Stage Analysis-Update $?)
-         ?fct <- (Element ?z has a CallBarrier)
+			?fct <- ({ env: clips 
+				        action: call-barrier
+						  type: element
+						  target: ?z })
          ?d <- (object (is-a Diplomat) (ID ?z) (Parent ?p) 
                        (HasCallBarrier TRUE))
          (exists (object (is-a Diplomat) (ID ?p)))
          =>
          (retract ?fct)
-         (assert (Element ?p has a CallBarrier)))
+			(assert ({ env: clips
+						  action: call-barrier
+						  type: element
+						  target: ?p })))
 ;------------------------------------------------------------------------------
 (defrule FlagCallBarrierForDiplomat-NoParent
          ;(declare (salience -10))
          (Stage Analysis-Update $?)
-         ?fct <- (Element ?z has a CallBarrier)
+			?fct <- ({ env: clips 
+				        action: call-barrier
+						  type: element
+						  target: ?z })
          ?d <- (object (is-a Diplomat) (ID ?z) (Parent ?p) 
                        (HasCallBarrier FALSE))
          (not (exists (object (is-a Diplomat) (ID ?p))))
@@ -145,7 +234,10 @@
 (defrule PropagateCallBarrierForDiplomat-NoParent
          ;(declare (salience -10))
          (Stage Analysis-Update $?)
-         ?fct <- (Element ?z has a CallBarrier)
+			?fct <- ({ env: clips 
+				        action: call-barrier
+						  type: element
+						  target: ?z })
          ?d <- (object (is-a Diplomat) (ID ?z) (Parent ?p) 
                        (HasCallBarrier TRUE))
          (not (exists (object (is-a Diplomat) (ID ?p))))
@@ -154,7 +246,10 @@
 ;------------------------------------------------------------------------------
 (defrule MarkHasACallDependency-Set
          (Stage Analysis-Update $?)
-         ?fct <- (Instruction ?target has a CallDependency)
+			?fct <- ({ env: clips
+						  action: call-dependency
+						  type: instruction
+						  target: ?target })
          ?inst <- (object (is-a Instruction) (ID ?target) 
                           (HasCallDependency FALSE))
          =>
@@ -163,7 +258,10 @@
 ;------------------------------------------------------------------------------
 (defrule MarkHasACallDependency-Ignore
          (Stage Analysis-Update $?)
-         ?fct <- (Instruction ?target has a CallDependency)
+			?fct <- ({ env: clips
+						  action: call-dependency
+						  type: instruction
+						  target: ?target })
          ?inst <- (object (is-a Instruction) (ID ?target) 
                           (HasCallDependency TRUE))
          =>
@@ -177,8 +275,16 @@
                  (TimeIndex ?ti1&:(< ?ti0 ?ti1)) (MemoryTarget ?sym1))
          (test (or (eq ?sym0 ?sym1) (eq ?sym0 UNKNOWN)))
          =>
-         (assert (Instruction ?t1 consumes ?t0)
-                 (Instruction ?t0 produces ?t1)))
+			(assert ({ env: clips 
+			           action: dependency-announce
+				        type: produces
+				        target: ?t0
+				        other: ?t1 })
+			        ({ env: clips
+			           action: dependency-announce
+			       	  type: consumes
+			       	  target: ?t1
+			       	  other: ?t0 })))
 ;------------------------------------------------------------------------------
 (defrule StoreToStoreDependency
          (Stage ExtendedMemoryAnalysis $?)
@@ -188,8 +294,16 @@
                  (TimeIndex ?ti1&:(< ?ti0 ?ti1)) (MemoryTarget ?sym1))
          (test (or (eq ?sym0 ?sym1) (eq ?sym0 UNKNOWN)))
          =>
-         (assert (Instruction ?t1 consumes ?t0)
-                 (Instruction ?t0 produces ?t1)))
+			(assert ({ env: clips 
+			           action: dependency-announce
+				        type: produces
+				        target: ?t0
+				        other: ?t1 })
+			        ({ env: clips
+			           action: dependency-announce
+			       	  type: consumes
+			       	  target: ?t1
+			       	  other: ?t0 })))
 ;------------------------------------------------------------------------------
 (defrule LoadToStoreDependency
          (Stage ExtendedMemoryAnalysis $?)
@@ -199,6 +313,14 @@
                  (TimeIndex ?ti1&:(< ?ti0 ?ti1)) (MemoryTarget ?sym1))
          (test (or (eq ?sym0 ?sym1) (eq ?sym0 UNKNOWN)))
          =>
-         (assert (Instruction ?t1 consumes ?t0)
-                 (Instruction ?t0 produces ?t1)))
+			(assert ({ env: clips 
+			           action: dependency-announce
+				        type: produces
+				        target: ?t0
+				        other: ?t1 })
+			        ({ env: clips
+			           action: dependency-announce
+			       	  type: consumes
+			       	  target: ?t1
+			       	  other: ?t0 })))
 ;------------------------------------------------------------------------------
