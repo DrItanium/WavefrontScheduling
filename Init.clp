@@ -29,6 +29,7 @@
  (create$ "Library/Loader.clp" 
   "Types/TypeLoader.clp"
   "Debug.clp"
+  "logic.clp"
   "Stages/StageRegistration.clp"
   "Stages/Fixup/StageGroupLoader.clp"
   "Stages/Analysis/StageGroupLoader.clp"
