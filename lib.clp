@@ -1,4 +1,5 @@
-;Copyright (c) 2012, Joshua Scoggins 
+;------------------------------------------------------------------------------
+;Copyright (c) 2012-2014, Joshua Scoggins 
 ;All rights reserved.
 ;
 ;Redistribution and use in source and binary forms, with or without
@@ -8,9 +9,6 @@
 ;    * Redistributions in binary form must reproduce the above copyright
 ;      notice, this list of conditions and the following disclaimer in the
 ;      documentation and/or other materials provided with the distribution.
-;    * Neither the name of Joshua Scoggins nor the
-;      names of its contributors may be used to endorse or promote products
-;      derived from this software without specific prior written permission.
 ;
 ;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ;ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,24 +21,33 @@
 ;(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;------------------------------------------------------------------------------
-; SetExtensions.clp - Contains set operations such as superset and equality
-; Written By Joshua Scoggins (6/29/2012)
-
+; lib.clp - Contains set operations such as superset and equality
+;------------------------------------------------------------------------------
 (deffunction superset (?a ?b)
-				 (and (>= (length$ ?a) (length$ ?b))
-						(subsetp ?b ?a) (not (subsetp ?a ?b))))
-
+			 (and (>= (length$ ?a) (length$ ?b))
+				  (subsetp ?b ?a) (not (subsetp ?a ?b))))
+;------------------------------------------------------------------------------
 (deffunction equal$ (?a ?b)
-				 (and 
-					(= (length$ ?a) (length$ ?b))
-					(subsetp ?b ?a) 
-					(subsetp ?a ?b)))
-
+			 (and 
+			   (= (length$ ?a) (length$ ?b))
+			   (subsetp ?b ?a) 
+			   (subsetp ?a ?b)))
+;------------------------------------------------------------------------------
 (deffunction has-common-element (?a ?b)
-				 (progn$ (?c ?a)
-							(if (member$ ?c ?b) then (return TRUE)))
-				 (return FALSE))
-
+			 (progn$ (?c ?a)
+					 (if (member$ ?c ?b) then (return TRUE)))
+			 (return FALSE))
+;------------------------------------------------------------------------------
 (deffunction disjoint (?a ?b)
-				 (not (has-common-element ?a ?b)))
-
+			 (not (has-common-element ?a ?b)))
+;------------------------------------------------------------------------------
+(deffunction symbol-to-pointer-list
+			 "Converts a given list of symbols that represent InteropObjects and pulls the
+			 pointer value out of it. This function assumes order is important"
+			 (?list)
+			 (bind ?result (create$))
+			 (progn$ (?e ?list)
+					 (bind ?obj (symbol-to-instance-name ?e))
+					 (bind ?result (create$ ?result (send ?obj get-Pointer))))
+			 (return ?result))
+;------------------------------------------------------------------------------

@@ -23,10 +23,4 @@
 ;------------------------------------------------------------------------------
 ;Init.clp - the entry point to the code :)
 ;------------------------------------------------------------------------------
-(batch-load 
- (create$ "Library/Loader.clp" 
-  "Types/TypeLoader.clp"
-  "Debug.clp"
-  "logic.clp"
-  ))
-
+(batch-load (create$ "lib.clp" "types.clp" "config.clp" "logic.clp")) 
