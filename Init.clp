@@ -30,11 +30,5 @@
   "Types/TypeLoader.clp"
   "Debug.clp"
   "logic.clp"
-  "Stages/StageRegistration.clp"
-  "Stages/Fixup/StageGroupLoader.clp"
-  "Stages/Analysis/StageGroupLoader.clp"
-  "Stages/Path/StageGroupLoader.clp"
-  "Stages/Wavefront/StageGroupLoader.clp"
-  "Stages/Final/StageGroupLoader.clp"
   ))
 
