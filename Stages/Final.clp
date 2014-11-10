@@ -1,4 +1,4 @@
-;Copyright (c) 2012, Joshua Scoggins 
+;Copyright (c) 2012-2014, Joshua Scoggins 
 ;All rights reserved.
 ;
 ;Redistribution and use in source and binary forms, with or without
@@ -8,9 +8,6 @@
 ;    * Redistributions in binary form must reproduce the above copyright
 ;      notice, this list of conditions and the following disclaimer in the
 ;      documentation and/or other materials provided with the distribution.
-;    * Neither the name of Joshua Scoggins nor the
-;      names of its contributors may be used to endorse or promote products
-;      derived from this software without specific prior written permission.
 ;
 ;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ;ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,8 +20,49 @@
 ;(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;------------------------------------------------------------------------------
+; Debug stats at the end 
+;------------------------------------------------------------------------------
+(defrule PrintRules
+		 (Stage Final $?)
+		 (Debug)
+		 (Rules)
+		 =>
+		 (rules))
+;------------------------------------------------------------------------------
+(defrule PrintFacts
+		 (Stage Final $?)
+		 (Debug)
+		 (Facts)
+		 =>
+		 (facts))
+;------------------------------------------------------------------------------
+
+(defrule Separator
+		 (Stage Final $?)
+		 (Debug)
+		 (Separator)
+		 =>
+		 (printout t "====================================================" crlf))
+;------------------------------------------------------------------------------
+(defrule ProfileInfo
+		 (Stage Final $?)
+		 (Debug)
+		 (Profile)
+		 =>
+		 (profile-info))
+;------------------------------------------------------------------------------
+(defrule FinalMemoryConsumption
+		 (Stage Final $?)
+		 (Debug)
+		 (Memory)
+		 =>
+		 (printout t "Final Memory Consumption: " (/ (mem-used) 131072) " MB" crlf
+				   "Memory Requests: " (mem-requests) crlf))
+;------------------------------------------------------------------------------
+; Memory related functions - ugh!
+;------------------------------------------------------------------------------
 (defrule CleanupMemory
- "Releases unused memory from CLIPS"
- (Stage Final $?)
- =>
- (release-mem))
+		 "Releases unused memory from CLIPS"
+		 (Stage Final $?)
+		 =>
+		 (release-mem))
