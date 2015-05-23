@@ -30,6 +30,10 @@
             "Extracts the corresponding llvm pointer from the target name")
 (defgeneric slot-insert-first$
             "Inserts a set of elements to the front a multislot in a given class")
+(defgeneric empty$
+            "Checks to see if a given multifield is empty or not")
+(defgeneric bool
+            "A simple function to convert a given piece of input to TRUE or FALSE")
 ;------------------------------------------------------------------------------
 (deffunction superset 
              (?a ?b)
@@ -107,3 +111,43 @@
   (slot-insert-first$ ?obj 
                       ?slot 
                       ?elements))
+(defmethod empty$
+  ((?list MULTIFIELD))
+  (= (length$ ?list) 0))
+
+(defmethod slot-delete-element$
+  ((?object INSTANCE)
+   (?slot-name SYMBOL)
+   ?target)
+  (bind ?result (member$ ?target 
+                         (send ?object 
+                               (sym-cat get- ?slot-name))))
+  (and ?result
+       (slot-delete$ ?object
+                     ?slot-name
+                     (expand$ (if (multifieldp ?result) then
+                                ?result
+                                else
+                                ; define the range syntax since it was a single 
+                                ; element
+                                (create$ ?result
+                                         ?result))))))
+
+(defmethod slot-delete-element$
+  ((?object INSTANCE)
+   (?slot-name SYMBOL)
+   $?target)
+  (slot-delete-element$ ?object
+                        ?slot-name
+                        ?target))
+
+(defmethod bool
+ "If it isn't FALSE then it is TRUE"
+  ((?v (neq ?v FALSE)))
+  TRUE)
+
+(defmethod bool
+  "If we get FALSE in then just pass it through"
+  ((?v SYMBOL (eq ?v FALSE)))
+  FALSE)
+
