@@ -2998,9 +2998,11 @@
          (Substage ScheduleObjectCreation $?)
          ?fct <- (Schedule ?e for ?r)
          (object (is-a BasicBlock)
-                 (ID ?e) (Parent ?r)
+                 (ID ?e) 
+                 (Parent ?r)
                  (Contents ?last))
-         (object (is-a TerminatorInstruction) (Parent ?e)
+         (object (is-a TerminatorInstruction) 
+                 (Parent ?e)
                  (ID ?last))
          =>
          ;mark the block as closed
@@ -3012,9 +3014,11 @@
          (Substage ScheduleObjectCreation $?)
          ?fct <- (Schedule ?e for ?r)
          (object (is-a BasicBlock)
-                 (ID ?e) (Parent ?r)
+                 (ID ?e) 
+                 (Parent ?r)
                  (Contents $? ?lastPhi ?last $?))
-         (object (is-a TerminatorInstruction) (Parent ?e)
+         (object (is-a TerminatorInstruction) 
+                 (Parent ?e)
                  (ID ?last))
          (object (is-a PhiNode)
                  (ID ?lastPhi))
@@ -3026,32 +3030,39 @@
          (declare (salience 10))
          (Stage WavefrontSchedule $?)
          (Substage ScheduleObjectCreation $?)
-         ?fct <- (Schedule ?e for ?r)
+         (Schedule ?e for ?r)
          (object (is-a TaggedObject&~BasicBlock)
-                 (ID ?e) (Class ?c))
+                 (ID ?e) 
+                 (name ?c))
          (object (is-a TaggedObject&~Region)
-                 (ID ?r) (Class ?c2))
+                 (ID ?r) 
+                 (name ?c2))
          =>
          (printout t "ERROR: Asserted a really wierd schedule fact: " crlf
-                   "What should be a block is a " ?c " named " ?e crlf
-                   "What should be a region is a " ?c2 " named " ?r crlf)
-         (exit))
+                   "What should be a block is a " (class ?c) " named " ?e crlf
+                   "What should be a region is a " (class ?c2) " named " ?r crlf)
+         (exit 1))
 ;------------------------------------------------------------------------------
 (defrule PreschedulePhiNodes
          "Adds all phi nodes into the list of scheduled instructions.
          We can always assume they are ready to go too!"
          (Stage WavefrontSchedule $?)
          (Substage ScheduleObjectCreation $?)
+         ; Are there more blocks or schedules, check this out to see if we can 
+         ; rearrange the match so that the not member check can be in 
+         ; the Scheduled multislot match
          ?schedObj <- (object (is-a Schedule)
-                              (ID ?n) (Parent ?p) 
+                              (Parent ?p) 
                               (Scheduled $?s))
          (object (is-a BasicBlock)
-                 (ID ?p) (Contents $? ?c $?))
+                 (ID ?p) 
+                 (Contents $? ?c $?))
          (object (is-a PhiNode)
                  (ID ?c))
          (test (not (member$ ?c ?s)))
          =>
-         (modify-instance ?schedObj (Scheduled $?s ?c)))
+         (modify-instance ?schedObj 
+                          (Scheduled $?s ?c)))
 ;------------------------------------------------------------------------------
 (defrule PrescheduleNonLocals
          "Marks all non local instructions as already scheduled. With the way 
@@ -3060,21 +3071,26 @@
          (Stage WavefrontSchedule $?)
          (Substage ScheduleObjectCreation $?)
          ?schedObj <- (object (is-a Schedule)
-                              (ID ?n) (Parent ?p) 
-                              (Contents $? ?c $?) (Scheduled $?s))
+                              (ID ?n) 
+                              (Parent ?p) 
+                              (Contents $? ?c $?) 
+                              (Scheduled $?s))
          ?inst <- (object (is-a Instruction)
-                          (ID ?c) (Parent ?p)
+                          (ID ?c) 
+                          (Parent ?p)
                           (NonLocalDependencies $? ?d $?))
          (test (not (member$ ?d ?s)))
          =>
-         (modify-instance ?schedObj (Scheduled $?s ?d)))
+         (modify-instance ?schedObj 
+                          (Scheduled $?s ?d)))
 ;------------------------------------------------------------------------------
 (defrule AssertPerformScheduling
          (declare (salience -1))
          (Stage WavefrontSchedule $?)
          (Substage ScheduleObjectCreation $?)
          (object (is-a Schedule)
-                 (ID ?q) (Parent ?b))
+                 (ID ?q) 
+                 (Parent ?b))
          =>
          (assert (Perform Schedule ?q for ?b)))
 ;------------------------------------------------------------------------------
@@ -3095,11 +3111,10 @@
          (Substage ScheduleObjectCreation $?)
          (Schedule ?e for ?r)
          =>
-         (printout t "ERROR: (Schedule " ?e " for " ?r ") still exists!" crlf)
-         (printout t "EXITING PROGRAM!" crlf)
+         (printout t "ERROR: Schedule " ?e " for " ?r " still exists!" crlf
+                   "EXITING PROGRAM!" crlf)
          (facts)
-
-         (exit))
+         (exit 1))
 ;------------------------------------------------------------------------------
 (defrule CanScheduleInstructionNow
          (declare (salience 344))
@@ -3107,13 +3122,17 @@
          (Substage ScheduleObjectUsage $?)
          (Perform Schedule ?n for ?b)
          ?sched <- (object (is-a Schedule)
-                           (ID ?n) (Contents ?curr $?rest) 
-                           (Scheduled $?s) (Success $?succ))
+                           (ID ?n) 
+                           (Contents ?curr $?rest) 
+                           (Scheduled $?s) 
+                           (Success $?succ))
          (object (is-a Instruction)
                  (ID ?curr) 
                  (LocalDependencies $?p&:(subsetp $?p $?s)))
          =>
-         (modify-instance ?sched (Contents $?rest) (Success $?succ ?curr)))
+         (modify-instance ?sched 
+                          (Contents $?rest) 
+                          (Success $?succ ?curr)))
 ;------------------------------------------------------------------------------
 (defrule MustStallInstructionForSchedule
          (declare (salience 343))
@@ -3121,21 +3140,25 @@
          (Substage ScheduleObjectUsage $?)
          (Perform Schedule ?n for ?b)
          ?sched <- (object (is-a Schedule)
-                           (ID ?n) (Contents ?curr $?rest) 
-                           (Scheduled $?s) (Failure $?fails))
+                           (ID ?n) 
+                           (Contents ?curr $?rest) 
+                           (Scheduled $?s) 
+                           (Failure $?fails))
          (object (is-a Instruction)
                  (ID ?curr) 
                  (LocalDependencies $?p&:(not (subsetp $?p $?s))))
          =>
-         (modify-instance ?sched (Contents $?rest) (Failure $?fails ?curr)))
+         (modify-instance ?sched 
+                          (Contents $?rest) 
+                          (Failure $?fails ?curr)))
 ;------------------------------------------------------------------------------
 (defrule EndInstructionScheduleAttempt
          (Stage WavefrontSchedule $?)
          (Substage ResetScheduling $?)
          ?fct <- (Perform Schedule ?n for ?b)
-         ?sched <- (object (is-a Schedule)
-                           (ID ?n)
-                           (Contents))
+         (object (is-a Schedule)
+                 (ID ?n)
+                 (Contents))
          =>
          (retract ?fct))
 ;------------------------------------------------------------------------------
@@ -3144,14 +3167,18 @@
          (Stage WavefrontSchedule $?)
          (Substage ResetScheduling $?)
          ?sched <- (object (is-a Schedule)
-                           (ID ?n) (Parent ?p)
-                           (Success ?targ $?rest) (Scheduled $?s)
+                           (ID ?n) 
+                           (Parent ?p)
+                           (Success ?targ $?rest) 
+                           (Scheduled $?s)
                            (InstructionStream $?is))
          (object (is-a Instruction)
                  (ID ?targ))
          =>
          (object-pattern-match-delay
-           (modify-instance ?sched (Success $?rest) (Scheduled $?s ?targ)
+           (modify-instance ?sched 
+                            (Success $?rest) 
+                            (Scheduled $?s ?targ)
                             (InstructionStream $?is ?targ))))
 ;------------------------------------------------------------------------------
 (defrule PutSuccessfulStoreInstructionIntoInstructionStream
@@ -3159,14 +3186,19 @@
          (Stage WavefrontSchedule $?)
          (Substage ResetScheduling $?)
          ?sched <- (object (is-a Schedule)
-                           (ID ?n) (Parent ?p)
-                           (Success ?targ $?rest) (Scheduled $?s)
+                           (ID ?n) 
+                           (Parent ?p)
+                           (Success ?targ $?rest) 
+                           (Scheduled $?s)
                            (InstructionStream $?stream))
          (object (is-a StoreInstruction)
-                 (ID ?targ) (DestinationRegisters ?reg))
+                 (ID ?targ) 
+                 (DestinationRegisters ?reg))
          =>
          (object-pattern-match-delay 
-           (modify-instance ?sched (Success $?rest) (Scheduled $?s ?targ ?reg)
+           (modify-instance ?sched 
+                            (Success $?rest) 
+                            (Scheduled $?s ?targ ?reg)
                             (InstructionStream $?stream ?targ))))
 ;------------------------------------------------------------------------------
 (defrule FinishedPopulatingInstructionGroup-AssertReset
@@ -3174,9 +3206,11 @@
          (Stage WavefrontSchedule $?)
          (Substage ResetScheduling $?)
          (object (is-a Schedule)
-                 (ID ?n) (Contents) (Success) 
+                 (ID ?n) 
+                 (Contents) 
+                 (Success) 
                  (Failure $?elements))
-         (test (> (length$ ?elements) 0))
+         (test (not (empty$ ?elements)))
          =>
          (assert (Reset schedule ?n)))
 ;------------------------------------------------------------------------------
@@ -3186,7 +3220,10 @@
          (Substage ResetScheduling $?)
          (object (is-a Schedule)
                  (ID ?n)
-                 (Parent ?p) (Contents) (Success) (Failure))
+                 (Parent ?p) 
+                 (Contents) 
+                 (Success) 
+                 (Failure))
          =>
          (assert (Schedule ?p in llvm)))
 ;------------------------------------------------------------------------------
@@ -3196,14 +3233,18 @@
          (Substage ResetScheduling $?)
          ?fct <- (Reset schedule ?n)
          ?sched <- (object (is-a Schedule)
-                           (ID ?n) (Parent ?p) (Contents) 
+                           (ID ?n) 
+                           (Parent ?p) 
+                           (Contents) 
                            (Failure $?elements))
          =>
          (object-pattern-match-delay
            (retract ?fct)
            (assert (Perform Schedule ?n for ?p)
                    (Reset scheduling process))
-           (modify-instance ?sched (Contents ?elements) (Failure))))
+           (modify-instance ?sched 
+                            (Contents ?elements) 
+                            (Failure))))
 ;------------------------------------------------------------------------------
 (defrule ResetSchedulingProcess
          (declare (salience -10))
@@ -3213,7 +3254,9 @@
          ?f1 <- (Reset scheduling process)
          =>
          (retract ?f0 ?f1)
-         (assert (Substage ScheduleObjectUsage ResetScheduling $?rest)))
+         (assert (Substage ScheduleObjectUsage 
+                           ResetScheduling 
+                           $?rest)))
 ;------------------------------------------------------------------------------
 (defrule FinishLLVMEncoding-HasPhi
          (declare (salience -12))
@@ -3221,19 +3264,24 @@
          (Substage LLVMUpdate $?)
          ?f1 <- (Schedule ?p in llvm)
          ?f2 <- (Update style for ?p is ?lastPhi)
-         (object (is-a Schedule) (Parent ?p) (InstructionStream $?stream))
+         (object (is-a Schedule) 
+                 (Parent ?p) 
+                 (InstructionStream $?stream))
          ?bb <- (object (is-a BasicBlock)
                         (ID ?p) 
-                        (Contents $?before ?lastPhi $?instructions ?last 
+                        (Contents $?before 
+                                  ?lastPhi $?instructions ?last 
                                   $?rest))
          (object (is-a TerminatorInstruction)
-                 (ID ?last) (Pointer ?tPtr))
+                 (ID ?last) 
+                 (Pointer ?tPtr))
          =>
          (object-pattern-match-delay
+           (retract ?f1 ?f2)
            (modify-instance ?bb 
                             (Contents $?before ?lastPhi ?stream ?last $?rest))
-           (llvm-schedule-block ?tPtr (symbol-to-pointer-list ?stream))
-           (retract ?f1 ?f2)))
+           (llvm-schedule-block ?tPtr 
+                                (symbol-to-pointer-list ?stream))))
 ;------------------------------------------------------------------------------
 (defrule FinishLLVMEncoding-NoPhi
          (declare (salience -12))
@@ -3243,15 +3291,19 @@
          ?f2 <- (Update style for ?p is)
          ?bb <- (object (is-a BasicBlock)
                         (ID ?p))
-         (object (is-a Schedule) (Parent ?p) (InstructionStream $?stream))
-         (object (is-a TerminatorInstruction) (Parent ?p)
+         (object (is-a Schedule) 
+                 (Parent ?p) 
+                 (InstructionStream $?stream))
+         (object (is-a TerminatorInstruction) 
+                 (Parent ?p)
                  (ID ?last) 
                  (Pointer ?tPtr))
          =>
          (object-pattern-match-delay
+           (retract ?f1 ?f2)
            (modify-instance ?bb (Contents ?stream ?last))
-           (llvm-schedule-block ?tPtr (symbol-to-pointer-list ?stream))
-           (retract ?f1 ?f2)))
+           (llvm-schedule-block ?tPtr 
+                                (symbol-to-pointer-list ?stream))))
 ;------------------------------------------------------------------------------
 (defrule RetractUpdateStyleHint
          (declare (salience -26))
@@ -3273,17 +3325,22 @@
          ;if this element is on the wavefront then we can be certain that all 
          ;of it's predecessors are above it. That is the definition of being on
          ;the wavefront
-         ?pa <- (object (is-a PathAggregate) (Parent ?e)
+         ?pa <- (object (is-a PathAggregate) 
+                        (Parent ?e)
                         (ID ?pp))
          (object (is-a Diplomat)
-                 (ID ?e) (PreviousPathElements $? ?z $?))
-         (object (is-a PathAggregate) (Parent ?z) 
+                 (ID ?e) 
+                 (PreviousPathElements $? ?z $?))
+         (object (is-a PathAggregate) 
+                 (Parent ?z) 
                  (InstructionPropagation $? ?targ ?alias ? ! $?))
          =>
          ;replace parent blocks of previous path elements with the name of the
          ;element this was acquired from
          ;(printout t "Put (" ?targ " " ?alias " " ?z "! ) into " ?pp crlf)
-         (slot-insert$ ?pa InstructionPropagation 1 ?targ ?alias ?z !))
+         (slot-insert-first$ ?pa
+                             InstructionPropagation
+                             ?targ ?alias ?z !))
 ;------------------------------------------------------------------------------
 (defrule RetractAggregationInformation
          (declare (salience -50))
@@ -3297,11 +3354,15 @@
          (declare (salience 1))
          (Stage WavefrontSchedule $?)
          (Substage PhiIdentify $?)
-         (object (is-a Wavefront) (Parent ?r) (Contents $? ?e $?))
-         ?pa <- (object (is-a PathAggregate) (Parent ?e) 
+         (object (is-a Wavefront) 
+                 (Parent ?r) 
+                 (Contents $? ?e $?))
+         ?pa <- (object (is-a PathAggregate) 
+                        (Parent ?e) 
                         (InstructionPropagation ?targ ?alias ?pred ! $?rest))
          =>
-         (modify-instance ?pa (InstructionPropagation $?rest))
+         (modify-instance ?pa 
+                          (InstructionPropagation $?rest))
          (assert (Propagation target ?targ with alias ?alias
                               from block ?pred for block ?e)))
 ;------------------------------------------------------------------------------
@@ -3312,11 +3373,15 @@
                              for block ?b)
          ?f1 <- (Propagation target ?t with alias ?a from block ?p1 
                              for block ?b)
-         (test (and (neq ?f0 ?f1) (neq ?p0 ?p1)))
-         ?pa <- (object (is-a PathAggregate) (Parent ?b))
+         (test (and (neq ?f0 ?f1) 
+                    (neq ?p0 ?p1)))
+         ?pa <- (object (is-a PathAggregate) 
+                        (Parent ?b))
          =>
          (retract ?f0 ?f1)
-         (slot-insert$ ?pa InstructionPropagation 1 ?t ?a ?b !))
+         (slot-insert-first$ ?pa
+                             InstructionPropagation
+                             ?t ?a ?b !))
 ;------------------------------------------------------------------------------
 (defrule MergePhiNodePropagationWithOtherPropagation
          (Stage WavefrontSchedule $?)
@@ -3349,10 +3414,13 @@
          (Substage PhiNode $?)
          ?f0 <- (Propagation target ?t with alias ?a0 from block ?p0 for 
                              block ?b)
-         ?pa <- (object (is-a PathAggregate) (Parent ?b))
+         ?pa <- (object (is-a PathAggregate) 
+                        (Parent ?b))
          =>
          (retract ?f0)
-         (slot-insert$ ?pa InstructionPropagation 1 ?t ?a0 ?b !))
+         (slot-insert-first$ ?pa
+                             InstructionPropagation 
+                             ?t ?a0 ?b !))
 ;------------------------------------------------------------------------------
 (defrule NamePhiNodeFromCreateStatement-NotOriginalBlock
          (declare (salience -12))
