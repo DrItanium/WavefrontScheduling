@@ -23,4 +23,10 @@
 ;------------------------------------------------------------------------------
 ;Init.clp - the entry point to the code :)
 ;------------------------------------------------------------------------------
-(batch-load (create$ "lib.clp" "types.clp" "config.clp" "logic.clp")) 
+; Load lib.clp to get the multifield version of batch* and then use it
+;------------------------------------------------------------------------------
+(batch* lib.clp)
+(batch* types.clp
+        config.clp
+        logic.clp)
+
