@@ -21,13 +21,6 @@
 ;(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;------------------------------------------------------------------------------
-;Init.clp - the entry point to the code :)
-;------------------------------------------------------------------------------
-; Load lib.clp to get the multifield version of batch* and then use it
-;------------------------------------------------------------------------------
-(batch* lib.clp)
-(batch* constants.clp
-        types.clp
-        config.clp
-        logic.clp)
-
+(defglobal MAIN
+           ?*first* = 10000
+           ?*dead-last* = -10000)
