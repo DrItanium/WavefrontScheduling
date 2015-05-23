@@ -28,6 +28,8 @@
             "Applies a given function to each element of a multifield")
 (defgeneric pointer-from-name
             "Extracts the corresponding llvm pointer from the target name")
+(defgeneric slot-insert-first$
+            "Inserts a set of elements to the front a multislot in a given class")
 ;------------------------------------------------------------------------------
 (deffunction superset 
              (?a ?b)
@@ -91,3 +93,17 @@
   "batch multiple files"
   (($?elements (> (length$ ?elements) 1)))
   (batch* ?elements))
+(defmethod slot-insert-first$
+  ((?obj INSTANCE)
+   (?slot SYMBOL)
+   (?elements MULTIFIELD))
+  (slot-insert$ ?obj 
+                ?slot 
+                1 (expand$ ?elements)))
+(defmethod slot-insert-first$
+  ((?obj INSTANCE)
+   (?slot SYMBOL)
+   $?elements)
+  (slot-insert-first$ ?obj 
+                      ?slot 
+                      ?elements))
