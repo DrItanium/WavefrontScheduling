@@ -21,33 +21,73 @@
 ;(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;------------------------------------------------------------------------------
-; lib.clp - Contains set operations such as superset and equality
+; lib.clp - Contains set operations (such as superset and equality) and other 
+;           operations
 ;------------------------------------------------------------------------------
-(deffunction superset (?a ?b)
-			 (and (>= (length$ ?a) (length$ ?b))
-				  (subsetp ?b ?a) (not (subsetp ?a ?b))))
+(defgeneric apply$ 
+            "Applies a given function to each element of a multifield")
+(defgeneric pointer-from-name
+            "Extracts the corresponding llvm pointer from the target name")
 ;------------------------------------------------------------------------------
-(deffunction equal$ (?a ?b)
-			 (and 
-			   (= (length$ ?a) (length$ ?b))
-			   (subsetp ?b ?a) 
-			   (subsetp ?a ?b)))
+(deffunction superset 
+             (?a ?b)
+             (and (>= (length$ ?a) 
+                      (length$ ?b))
+                  (subsetp ?b ?a) 
+                  (not (subsetp ?a ?b))))
 ;------------------------------------------------------------------------------
-(deffunction has-common-element (?a ?b)
-			 (progn$ (?c ?a)
-					 (if (member$ ?c ?b) then (return TRUE)))
-			 (return FALSE))
+(deffunction equal$ 
+             (?a ?b)
+             (and (= (length$ ?a) (length$ ?b))
+                  (subsetp ?b ?a) 
+                  (subsetp ?a ?b)))
+;------------------------------------------------------------------------------
+(deffunction has-common-element 
+             (?a ?b)
+             (progn$ (?c ?a)
+                     (if (member$ ?c ?b) then 
+                       (return TRUE)))
+             (return FALSE))
 ;------------------------------------------------------------------------------
 (deffunction disjoint (?a ?b)
-			 (not (has-common-element ?a ?b)))
+             (not (has-common-element ?a ?b)))
+;------------------------------------------------------------------------------
+(defmethod apply$
+  ((?fn SYMBOL)
+   (?elements MULTIFIELD))
+  (bind ?output (create$))
+  (progn$ (?e ?elements)
+          (bind ?output (create$ ?output
+                                 (funcall ?fn ?e))))
+  (return ?output))
+;------------------------------------------------------------------------------
+(defmethod apply$
+  ((?fn SYMBOL)
+   $?elements)
+  (apply$ ?fn ?elements))
+;------------------------------------------------------------------------------
+(defmethod pointer-from-name
+  ((?name SYMBOL))
+  (send (symbol-to-instance-name ?name) get-pointer))
+
+(defmethod pointer-from-name
+  ((?name INSTANCE))
+  (send ?name get-pointer))
 ;------------------------------------------------------------------------------
 (deffunction symbol-to-pointer-list
-			 "Converts a given list of symbols that represent InteropObjects and pulls the
-			 pointer value out of it. This function assumes order is important"
-			 (?list)
-			 (bind ?result (create$))
-			 (progn$ (?e ?list)
-					 (bind ?obj (symbol-to-instance-name ?e))
-					 (bind ?result (create$ ?result (send ?obj get-Pointer))))
-			 (return ?result))
+             "Converts a given list of symbols that represent InteropObjects and pulls the
+             pointer value out of it. This function assumes order is important"
+             (?list)
+             (apply$ pointer-from-name
+                     ?list))
 ;------------------------------------------------------------------------------
+(defmethod batch*
+  "batch multiple files"
+  ((?elements MULTIFIELD (> (length$ ?elements) 1)))
+  (progn$ (?a ?elements)
+          (batch* ?a)))
+;------------------------------------------------------------------------------
+(defmethod batch*
+  "batch multiple files"
+  (($?elements (> (length$ ?elements) 1)))
+  (batch* ?elements))
