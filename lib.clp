@@ -34,6 +34,8 @@
             "Checks to see if a given multifield is empty or not")
 (defgeneric bool
             "A simple function to convert a given piece of input to TRUE or FALSE")
+(defgeneric slot-delete-first$
+            "Deletes the first element in a multislot")
 ;------------------------------------------------------------------------------
 (deffunction superset 
              (?a ?b)
@@ -151,3 +153,9 @@
   ((?v SYMBOL (eq ?v FALSE)))
   FALSE)
 
+(defmethod slot-delete-first$
+  ((?object INSTANCE)
+   (?slot-name SYMBOL))
+  (slot-delete$ ?object
+                ?slot-name
+                1 1))

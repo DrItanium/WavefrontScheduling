@@ -3363,42 +3363,47 @@
          ?agObj <- (object (is-a PathAggregate) 
                            (Parent ?b))
          ?bb <- (object (is-a BasicBlock) 
-
                         (ID ?b) 
                         (Contents ?first $?rest)
-                        (UnlinkedInstructions $?ui))
-         (test (not (member$ ?t $?ui)))
+                        (UnlinkedInstructions $?ui&:(not (member$ ?t $?ui))))
          (object (is-a Instruction) 
-
                  (ID ?first) 
                  (Pointer ?bPtr))
          (object (is-a Instruction) 
-
                  (ID ?t) 
                  (Type ?ty))
          (object (is-a LLVMType) 
-
                  (ID ?ty) 
                  (Pointer ?dataType))
          =>
          (retract ?fct)
+         (assert (Update duration for block ?b))
          (bind ?name (sym-cat phi. (gensym*) . ?t))
          (bind ?count (/ (length$ $?elements) 2))
-         (bind ?pointers (symbol-to-pointer-list ?elements))
          (make-instance ?name of PhiNode 
                         (Parent ?b)
                         (TimeIndex 0)
-                        (Pointer (llvm-make-phi-node ?name ?dataType ?count 
-                                                     ?bPtr ?pointers))
+                        (Pointer (llvm-make-phi-node ?name 
+                                                     ?dataType 
+                                                     ?count 
+                                                     ?bPtr 
+                                                     (symbol-to-pointer-list ?elements)))
                         (IncomingValueCount ?count)
                         (Operands $?elements))
          ;we've scheduled the given original instruction into this block
          ; although it's just a ruse
-         (slot-insert$ ?agObj ScheduledInstructions 1 ?t)
-         (slot-insert$ ?agObj InstructionPropagation 1 ?t ?name ?b !)
-         (slot-insert$ ?agObj ReplacementActions 1 ?t ?name !)
-         (slot-insert$ ?bb Contents 1 ?name)
-         (assert (Update duration for block ?b)))
+         (slot-insert-first$ ?agObj
+                             ScheduledInstructions 
+                             ?t)
+         (slot-insert-first$ ?agObj
+                             InstructionPropagation
+                             ?t ?name ?b !)
+         (slot-insert-first$ ?agObj
+                             ReplacementActions
+                             ?t ?name !)
+         (slot-insert-first$ ?bb
+                             Contents
+                             ?name))
 ;------------------------------------------------------------------------------
 (defrule NamePhiNodeFromCreateStatement-OriginalBlock
          (declare (salience -12))
@@ -3409,42 +3414,44 @@
          ?agObj <- (object (is-a PathAggregate) 
                            (Parent ?b))
          ?bb <- (object (is-a BasicBlock) 
-
                         (ID ?b) 
                         (Contents ?first $?rest) 
-                        (UnlinkedInstructions $?ui))
-         (test (not (member$ ?t ?ui)))
+                        (UnlinkedInstructions $?ui&:(member$ ?t ?ui)))
          (object (is-a Instruction) 
-
                  (ID ?first) 
                  (Pointer ?bPtr))
          ?tObj <- (object (is-a Instruction) 
-
                           (ID ?t) 
                           (Type ?ty) 
                           (Pointer ?tPtr))
          (object (is-a LLVMType) 
-
                  (ID ?ty) 
                  (Pointer ?dataType))
          =>
          (retract ?fct)
          (bind ?name (sym-cat phi. (gensym*) . ?t))
          (bind ?count (/ (length$ $?elements) 2))
-         (bind ?pointers (symbol-to-pointer-list ?elements))
-         (bind ?phiPointer 
-               (llvm-make-phi-node ?name ?dataType ?count ?bPtr ?pointers))
+         (bind ?phiPointer (llvm-make-phi-node ?name 
+                                               ?dataType 
+                                               ?count 
+                                               ?bPtr 
+                                               (symbol-to-pointer-list ?elements)))
          (bind ?phiObj (make-instance ?name of PhiNode 
                                       (Parent ?b)
                                       (TimeIndex 0)
                                       (Pointer ?phiPointer)
                                       (IncomingValueCount ?count)
                                       (Operands $?elements)))
-         (llvm-replace-all-uses ?tPtr ?phiPointer)
+         (llvm-replace-all-uses ?tPtr 
+                                ?phiPointer)
          (llvm-unlink-and-delete-instruction ?tPtr)
          (unmake-instance ?tObj)
-         (slot-insert$ ?agObj ScheduledInstructions 1 ?t)
-         (slot-insert$ ?bb Contents 1 ?name)
+         (slot-insert-first$ ?agObj
+                             ScheduledInstructions
+                             ?t)
+         (slot-insert-first$ ?bb
+                             Contents
+                             ?name)
          (assert (Update duration for block ?b)))
 ;------------------------------------------------------------------------------
 (defrule ReindexBasicBlock 
@@ -3452,16 +3459,17 @@
          (Substage PhiNodeUpdate $?)
          ?fct <- (Update duration for block ?b)
          (object (is-a BasicBlock)
-                 (ID ?b) (Contents $?c))
+                 (ID ?b) 
+                 (Contents $?c))
          =>
-         ;this is very much procedural but I frankly don't care
-         ;anymore. 
-         (bind ?index 0)
+         (retract ?fct)
+         ; This reindex should be migrated to BasicBlock and make it responsible 
+         ; for such actions
          (progn$ (?t ?c)
-                 (bind ?obj (instance-address (symbol-to-instance-name ?t)))
-                 (modify-instance ?obj (TimeIndex ?index))
-                 (bind ?index (+ ?index 1)))
-         (retract ?fct))
+                 ; use the index variable defined by progn$ to declare the time 
+                 ; index
+                 (modify-instance (symbol-to-instance-name ?t)
+                                  (TimeIndex (- ?t-index 1)))))
 ;------------------------------------------------------------------------------
 ; Rules associated with advancing the wavefront
 ;------------------------------------------------------------------------------
@@ -3471,47 +3479,67 @@
          (Stage WavefrontSchedule $?)
          (Substage AdvanceInit $?)
          ?wave <- (object (is-a Wavefront)
-                          (ID ?z) (Parent ?r) 
-                          (Contents $?c) (Closed $?cl))
-         (test (or (> (length$ ?c) 0) (> (length$ ?cl) 0)))
+                          (ID ?z) 
+                          (Parent ?r) 
+                          (Contents $?c) 
+                          (Closed $?cl))
+         (test (or (not (empty$ ?c))
+                   (not (empty$ ?cl))))
          =>
-         (slot-insert$ ?wave DeleteNodes 1 ?c ?cl))
+         (slot-insert-first$ ?wave
+                             DeleteNodes
+                             ?c ?cl))
 ;------------------------------------------------------------------------------
 (defrule MarkShouldStayOnWavefront
          (declare (salience 343))
          (Stage WavefrontSchedule $?)
          (Substage AdvanceIdentify $?)
          ?wave <- (object (is-a Wavefront)
-                          (ID ?q) (Parent ?r) 
+                          (ID ?q) 
+                          (Parent ?r) 
                           (DeleteNodes $?a ?b $?c))
          ?bb <- (object (is-a Diplomat)
-                        (ID ?b) (NextPathElements ?s))
+                        (ID ?b) 
+                        (NextPathElements ?s))
          (object (is-a Diplomat)
-                 (ID ?s) (PreviousPathElements $?ppe))
-         (test (not (subsetp ?ppe (send ?wave get-DeleteNodes)))) 
-         ?agObj <- (object (is-a PathAggregate) (Parent ?b))
+                 (ID ?s) 
+                 (PreviousPathElements $?ppe))
+         (test (not (subsetp ?ppe 
+                             (send ?wave get-DeleteNodes)))) 
+         (object (is-a PathAggregate) 
+                 (Parent ?b))
          =>
          (object-pattern-match-delay
-           (if (not (member$ ?b (send ?wave get-Closed))) then
-             (bind ?ind (member$ ?b (send ?wave get-Contents)))
+           (if (not (member$ ?b 
+                             (send ?wave get-Closed))) then
+             (bind ?ind (member$ ?b 
+                                 (send ?wave get-Contents)))
              (slot-delete$ ?wave Contents ?ind ?ind)
-             (slot-insert$ ?wave Closed 1 ?b))
-           (modify-instance ?wave (DeleteNodes $?a $?c))))
+             (slot-insert-first$ ?wave 
+                                 Closed 
+                                 ?b))
+           (modify-instance ?wave 
+                            (DeleteNodes $?a $?c))))
 ;------------------------------------------------------------------------------
 (defrule DeleteElementFromWavefront
          (declare (salience 180))
          (Stage WavefrontSchedule $?)
          (Substage Advance $?)
          ?wave <- (object (is-a Wavefront)
-                          (ID ?id) (Parent ?r) 
+                          (ID ?id) 
+                          (Parent ?r) 
                           (DeleteNodes ?a $?))
          (object (is-a Diplomat)
-                 (ID ?a) (NextPathElements $?npe))
+                 (ID ?a) 
+                 (NextPathElements $?npe))
          =>
          (object-pattern-match-delay
-           (bind ?ind (member$ ?a (send ?wave get-Contents)))
-           (bind ?ind2 (member$ ?a (send ?wave get-Closed)))
-           (slot-delete$ ?wave DeleteNodes 1 1)
+           (bind ?ind (member$ ?a 
+                               (send ?wave get-Contents)))
+           (bind ?ind2 (member$ ?a 
+                                (send ?wave get-Closed)))
+           ;Seriously? Just modify the instance instead.....
+           (slot-delete-first$ ?wave DeleteNodes)
            (if ?ind then (slot-delete$ ?wave Contents ?ind ?ind))
            (if ?ind2 then (slot-delete$ ?wave Closed ?ind2 ?ind2))
            (assert (Add into ?id blocks $?npe))))
@@ -3526,9 +3554,13 @@
          =>
          (retract ?fct)
          ;I know that this is procedural but I really want to get this done
+         ; Why are we doing get-Contents calls?
          (assert (Add into ?id blocks $?rest))
-         (if (not (member$ ?next (send ?wave get-Contents))) then
-           (slot-insert$ ?wave Contents 1 ?next)))
+         (if (not (member$ ?next 
+                           (send ?wave get-Contents))) then
+           (slot-insert-first$ ?wave
+                               Contents 
+                               ?next)))
 ;------------------------------------------------------------------------------
 (defrule PutSuccessorsOntoWavefront-NoMoreElements
          (declare (salience 100))
@@ -3544,8 +3576,8 @@
          ?fct <- (Substage Update $?)
          =>
          (bind ?instances (find-all-instances ((?wave Wavefront)) 
-                                              (> (length$ ?wave:Contents) 0)))
-         (if (> (length$ ?instances) 0) then
+                                              (not (empty$ ?wave:Contents))))
+         (if (not (empty$ ?instances)) then
            (retract ?fct)
            (assert (Substage Init 
                              Identify 
@@ -3586,18 +3618,22 @@
                         (ID ?b) 
                         (UnlinkedInstructions ?i $?rest))
          ?instruction <- (object (is-a Instruction)
-                                 (ID ?i) (Parent ?b) 
+                                 (ID ?i) 
+                                 (Parent ?b) 
                                  (Pointer ?ptr))
-         (object (is-a PathAggregate) (Parent ?b) 
+         (object (is-a PathAggregate) 
+                 (Parent ?b) 
                  (InstructionPropagation $? ?i ?new ?b ! $?))
          (object (is-a Instruction)
-                 (ID ?new) (Pointer ?nPtr))
+                 (ID ?new) 
+                 (Pointer ?nPtr))
          =>
          ;this is a little gross but it is a very easy way to ensure that
          ;things work correctly
          (object-pattern-match-delay
            (llvm-replace-all-uses ?ptr ?nPtr)
-           (modify-instance ?bb (UnlinkedInstructions $?rest))
+           (modify-instance ?bb 
+                            (UnlinkedInstructions $?rest))
            (llvm-unlink-and-delete-instruction ?ptr)
            (unmake-instance ?instruction)))
 ;------------------------------------------------------------------------------
@@ -3616,10 +3652,14 @@
          (declare (salience 10))
          (Stage WavefrontSchedule $?)
          (Substage DependencyAnalysis $?)
-         (object (is-a Wavefront) (Parent ?r) (Contents $? ?e $?))
+         (object (is-a Wavefront) 
+                 (Parent ?r) 
+                 (Contents $? ?e $?))
          (object (is-a BasicBlock)
                  (ID ?e))
-         (object (is-a PathAggregate) (Parent ?e) (OriginalStopIndex ?si))
+         (object (is-a PathAggregate) 
+                 (Parent ?e) 
+                 (OriginalStopIndex ?si))
          =>
          ;only look at instructions starting at the original stop index. This
          ;prevents unncessary recomputation
@@ -3632,15 +3672,18 @@
          (Stage WavefrontSchedule $?)
          (Substage DependencyAnalysis $?)
          (Evaluate ?p for dependencies starting at ?si)
-         ?i0 <- (object (is-a Instruction) (Parent ?p)
+         ?i0 <- (object (is-a Instruction) 
+             (Parent ?p)
                         (ID ?t0)
-                        (Operands $? ?c $?) (TimeIndex ?ti0))
+                        (Operands $? ?c $?) 
+                        (TimeIndex ?ti0))
          (object (is-a TaggedObject&~ConstantInteger&~ConstantFloatingPoint) 
-
                  (ID ?c))
-         ?i1 <- (object (is-a Instruction) (Parent ?p)
+         ?i1 <- (object (is-a Instruction) 
+             (Parent ?p)
                         (ID ?t1)
-                        (TimeIndex ?ti1&:(and (>= ?ti1 ?si) (< ?ti0 ?ti1)))
+                        (TimeIndex ?ti1&:(and (>= ?ti1 ?si) 
+                                          (< ?ti0 ?ti1)))
                         (DestinationRegisters $? ?c $?))
          =>
          (assert (Instruction ?t1 consumes ?t0)
@@ -3653,16 +3696,19 @@
          (Stage WavefrontSchedule $?)
          (Substage DependencyAnalysis $?)
          (Evaluate ?p for dependencies starting at ?si)
-         (object (is-a Instruction) (Parent ?p)
+         (object (is-a Instruction) 
+          (Parent ?p)
                  (ID ?t0)
-                 (DestinationRegisters $? ?c $?) (TimeIndex ?ti0))
+                 (DestinationRegisters $? ?c $?) 
+                 (TimeIndex ?ti0))
          (object (is-a TaggedObject&~ConstantInteger&~ConstantFloatingPoint) 
-
                  (ID ?c))
-         (object (is-a Instruction) (Parent ?p)
+         (object (is-a Instruction) 
+          (Parent ?p)
                  (ID ?t1)
                  (Operands $? ?c $?) 
-                 (TimeIndex ?ti1&:(and (>= ?ti1 ?si) (< ?ti0 ?ti1))))
+                 (TimeIndex ?ti1&:(and (>= ?ti1 ?si) 
+                                   (< ?ti0 ?ti1))))
          =>
          (assert (Instruction ?t1 consumes ?t0)
                  (Instruction ?t0 produces ?t1)))
@@ -3674,15 +3720,18 @@
          (Stage WavefrontSchedule $?)
          (Substage DependencyAnalysis $?)
          (Evaluate ?p for dependencies starting at ?si)
-         ?i0 <- (object (is-a Instruction) (Parent ?p)
+         ?i0 <- (object (is-a Instruction) 
+                        (Parent ?p)
                         (ID ?t0)
-                        (DestinationRegisters $? ?c $?) (TimeIndex ?ti0))
+                        (DestinationRegisters $? ?c $?) 
+                        (TimeIndex ?ti0))
          (object (is-a TaggedObject&~ConstantInteger&~ConstantFloatingPoint) 
-
                  (ID ?c))
-         ?i1 <- (object (is-a Instruction) (Parent ?p)
+         ?i1 <- (object (is-a Instruction) 
+                        (Parent ?p)
                         (ID ?t1) 
-                        (TimeIndex ?ti1&:(and (>= ?ti1 ?si) (< ?ti0 ?ti1))) 
+                        (TimeIndex ?ti1&:(and (>= ?ti1 ?si) 
+                                              (< ?ti0 ?ti1))) 
                         (DestinationRegisters $? ?c $?))
          =>
          (assert (Instruction ?t1 consumes ?t0)
@@ -3699,12 +3748,16 @@
          (Substage DependencyAnalysis $?)
          (Evaluate ?p for dependencies starting at ?si)
          (object (is-a CallInstruction)
-                 (ID ?name) (Parent ?p) 
-                 (DoesNotAccessMemory FALSE) (OnlyReadsMemory FALSE) 
+                 (ID ?name) 
+                 (Parent ?p) 
+                 (DoesNotAccessMemory FALSE) 
+                 (OnlyReadsMemory FALSE) 
                  (MayWriteToMemory TRUE)
                  (TimeIndex ?t0))
-         (object (is-a Instruction) (Parent ?p) 
-                 (TimeIndex ?ti1&:(and (>= ?ti1 ?si) (< ?t0 ?ti1)))
+         (object (is-a Instruction) 
+                 (Parent ?p) 
+                 (TimeIndex ?ti1&:(and (>= ?ti1 ?si) 
+                                   (< ?t0 ?ti1)))
                  (HasCallDependency FALSE)
                  (ID ?following))
          =>
