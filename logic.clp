@@ -106,8 +106,10 @@
          (object (is-a BasicBlock) 
                  (ID ?first))
          =>
-         (slot-insert$ ?o Contents 1 ?first)
          (retract ?f)
+         (slot-insert-first$ ?o
+                             Contents
+                             ?first)
          (assert (Populate FlatList of ?id with $?rest)))
 ;------------------------------------------------------------------------------
 (defrule PopulateFlatList-Region
@@ -124,7 +126,9 @@
          (retract ?f)
          ;Add the reference to FlatList for the time being until we have
          ;finished constructing an entire flat list
-         (slot-insert$ ?o Contents 1 ?name)
+         (slot-insert-first$ ?o
+                             Contents
+                             ?name)
          (assert (Populate FlatList of ?id with $?rest)))
 ;------------------------------------------------------------------------------
 (defrule RetractFlatListConstruction
@@ -315,7 +319,9 @@
          =>
          (retract ?fct)
          (assert (Give ?p from ?r the following produced items $?produced))
-         (slot-insert$ ?region Produces 1 ?produced))
+         (slot-insert-first$ ?region
+                             Produces
+                             ?produced))
 ;------------------------------------------------------------------------------
 (defrule PropagateRegionProducers-ParentDoesntExist
          (Stage ModificationPropagation $?)
@@ -327,7 +333,9 @@
                               (ID ?p))))
          =>
          (retract ?fct)
-         (slot-insert$ ?region Produces 1 ?produced))
+         (slot-insert-first$ ?region
+                            Produces
+                            ?produced))
 ;------------------------------------------------------------------------------
 (defrule IdentifyNonLocalDependencies
          (Stage ModificationPropagation $?)
@@ -342,8 +350,12 @@
          =>
          ;since we don't copy the set of producers at the start anymore we
          ;need this operation as well
-         (slot-insert$ ?i0 Producers 1 ?op)
-         (slot-insert$ ?i0 NonLocalDependencies 1 ?op))
+         (slot-insert-first$ ?i0 
+                             Producers 
+                             ?op)
+         (slot-insert-first$ ?i0
+                             NonLocalDependencies
+                             ?op))
 ;------------------------------------------------------------------------------
 ; Rules for determining ownership of blocks, regions, etc
 ;------------------------------------------------------------------------------
@@ -351,17 +363,21 @@
          (Stage DeterminantConstruction $?)
          (object (is-a Region)
                  (ID ?r))
-         (not (exists (object (is-a OwnershipDeterminant) (Parent ?r))))
+         (not (exists (object (is-a OwnershipDeterminant) 
+                              (Parent ?r))))
          =>
-         (make-instance of OwnershipDeterminant (Parent ?r)))
+         (make-instance of OwnershipDeterminant 
+                        (Parent ?r)))
 ;------------------------------------------------------------------------------
 (defrule ConstructDeterminantForBasicBlock
          (Stage DeterminantConstruction $?)
          (object (is-a BasicBlock)
                  (ID ?b))
-         (not (exists (object (is-a OwnershipDeterminant) (Parent ?b))))
+         (not (exists (object (is-a OwnershipDeterminant) 
+                              (Parent ?b))))
          =>
-         (make-instance of OwnershipDeterminant (Parent ?b)))
+         (make-instance of OwnershipDeterminant 
+                        (Parent ?b)))
 ;------------------------------------------------------------------------------
 (defrule PopulateDeterminant
          (Stage DeterminantPopulation $?)
@@ -373,8 +389,12 @@
          =>
          (retract ?fct)
          (object-pattern-match-delay 
-           (slot-insert$ ?obj2 PotentialChildren 1 ?b)
-           (slot-insert$ ?obj Claims 1 ?a)))
+           (slot-insert-first$ ?obj2 
+                               PotentialChildren
+                               ?b)
+           (slot-insert-first$ ?obj
+                               Claims
+                               ?a)))
 ;------------------------------------------------------------------------------
 (defrule DetermineIndirectClaim
          (Stage DeterminantResolution $?)
@@ -392,9 +412,11 @@
          =>
          ;let's see if this is faster
          (object-pattern-match-delay 
-           (modify-instance ?t0 (IndirectClaims ?ic ?a)
+           (modify-instance ?t0 
+                            (IndirectClaims ?ic ?a)
                             (Claims ?v ?x))
-           (modify-instance ?t1 (PotentialChildren ?t ?r))))
+           (modify-instance ?t1 
+                            (PotentialChildren ?t ?r))))
 ;------------------------------------------------------------------------------
 (defrule DetermineIndirectIndirectClaim
          (Stage DeterminantIndirectResolution $?)
@@ -411,9 +433,11 @@
                         (PotentialChildren $?z ?b $?q))
          =>
          (object-pattern-match-delay 
-           (modify-instance ?t0 (IndirectClaims ?ic ?a)
+           (modify-instance ?t0 
+                            (IndirectClaims ?ic ?a)
                             (Claims ?l ?x))
-           (modify-instance ?t1 (PotentialChildren ?z ?q))))
+           (modify-instance ?t1 
+                            (PotentialChildren ?z ?q))))
 ;------------------------------------------------------------------------------
 (defrule DeleteNonExistentReferences
          (Stage Fixup $?)
@@ -434,7 +458,8 @@
          ?obj <- (object (is-a Region)
                          (ID ?p))
          =>
-         (modify-instance ?obj (Parent ?a)))
+         (modify-instance ?obj 
+                          (Parent ?a)))
 ;------------------------------------------------------------------------------
 (defrule UpdateOwnerOfTargetBasicBlock
          (Stage FixupUpdate $?)
@@ -444,7 +469,8 @@
          ?obj <- (object (is-a BasicBlock)
                          (ID ?p))
          =>
-         (modify-instance ?obj (Parent ?a)))
+         (modify-instance ?obj 
+                          (Parent ?a)))
 ;------------------------------------------------------------------------------
 (defrule AddNewChildToTargetRegion
          (Stage FixupUpdate $?)
@@ -456,7 +482,9 @@
                             (Contents $?c))
          (test (not (member$ ?a ?c)))
          =>
-         (slot-insert$ ?region Contents 1 ?a))
+         (slot-insert-first$ ?region
+                             Contents
+                             ?a))
 ;------------------------------------------------------------------------------
 (defrule CleanupOwnershipDeterminants
          "Deletes all of the OwnershipDeterminant objects in a single rule 
@@ -4778,16 +4806,13 @@
          =>
          (retract ?fct)
          (object-pattern-match-delay
-           ;(printout t "Scheduled " ?inst " into " ?e crlf)
            (modify-instance ?terminator 
                             (TimeIndex (+ ?ti 1)))
-           ;(modify-instance ?newBlock (Produces ?nBProds ?register))
            (modify-instance ?oldBlock 
                             (Contents $?before 
                                       $?rest) 
                             (Produces $?pBefore 
                                       $?pRest))
-           ;(modify-instance ?cpvObject (Paths))
            (assert (Remove evidence of ?inst from instructions $?niConsumers)
                    ;(send ?newInst get-Consumers))
                    (Recompute block ?otherBlock))
@@ -4797,7 +4822,6 @@
                                                      ?inst ?register)
                               (ReplacementActions $?agRA 
                                                   ?inst ?inst !))
-             ;(slot-insert$ ?agObj ScheduledInstructions 1 ?inst ?register)
              (modify-instance ?newBlock 
                               (Produces $?nBProds 
                                         ?register)
@@ -4811,9 +4835,6 @@
                                        ?inst ?e))
              (llvm-unlink-and-move-instruction-before ?nPtr 
                                                       ?tPtr)
-             ;(slot-insert$ ?cpvObject ScheduleTargets 1 ?e ?inst)
-             ;(slot-insert$ ?cpvObject Aliases 1 ?inst ?e)
-             ;(slot-insert$ ?agObj ReplacementActions 1 ?inst ?inst !)
              else
              (bind ?newName (sym-cat movedinstruction. (gensym*) . ?inst))
              (modify-instance ?cpvObject 
@@ -4824,9 +4845,6 @@
                               (Aliases ?cpvAliases 
                                        ?newName 
                                        ?e))
-             ;(slot-insert$ ?cpvObject ScheduleTargets 1 ?e ?newName)
-             ;(slot-insert$ ?cpvObject Aliases 1 ?newName ?e)
-             ;(slot-insert$ ?agObj ReplacementActions 1 ?inst ?newName !)
              (modify-instance ?newBlock 
                               (Produces $?nBProds 
                                         ?register)
@@ -4858,8 +4876,6 @@
                                                       ?inst ?newName ?e !)
                               (ScheduledInstructions $?agSI 
                                                      ?inst)))))
-;(slot-insert$ ?agObj InstructionPropagation 1 ?inst ?newName ?e !)
-;(slot-insert$ ?agObj ScheduledInstructions 1 ?inst))))
 ;------------------------------------------------------------------------------
 (defrule CloneInstructionIntoBlock
          "Moves the given object into bottom of the given block"
@@ -5039,7 +5055,8 @@
                          (Failures $?failures))
          =>
          (retract ?fct)
-         (modify-instance ?obj (Failures))
+         (modify-instance ?obj 
+                          (Failures))
          (assert (From ?cpv reopen $?failures)))
 ;------------------------------------------------------------------------------
 (defrule ReopenBlockOnWavefront
@@ -5063,9 +5080,10 @@
                           (ImpossibleCompensationPathVectors)
                           (TargetCompensationPathVectors $?icpv))
          (progn$ (?q ?icpv)
-                 (slot-insert$ ?pa InstructionList 1 
-                               (send (symbol-to-instance-name ?q) 
-                                     get-Parent)))
+                 (slot-insert-first$ ?pa
+                                     InstructionList
+                                     (send (symbol-to-instance-name ?q)
+                                           get-Parent)))
          (modify-instance ?wave 
                           (Contents $?cnts ?fail) 
                           (Closed ?a ?b))
@@ -5083,7 +5101,9 @@
          ?obj <- (object (is-a CompensationPathVector)
                          (ID ?cpv))
          =>
-         (slot-insert$ ?obj Failures 1 ?fail)
+         (slot-insert-first$ ?obj
+                             Failures 
+                             ?fail)
          (retract ?fct)
          (assert (From ?cpv reopen $?failures)))
 ;------------------------------------------------------------------------------
@@ -5110,7 +5130,6 @@
          =>
          (facts))
 ;------------------------------------------------------------------------------
-
 (defrule Separator
          (Stage Final $?)
          (Debug)
