@@ -104,7 +104,6 @@
                        (Parent ?id))
          ; do we need to make the match? probably
          (object (is-a BasicBlock) 
-
                  (ID ?first))
          =>
          (slot-insert$ ?o Contents 1 ?first)
@@ -117,11 +116,9 @@
          ?o <- (object (is-a FlatList) 
                        (Parent ?id))
          (object (is-a Region) 
-
                  (ID ?first))
          (object (is-a FlatList) 
                  (Parent ?first) 
-
                  (ID ?name))
          =>
          (retract ?f)
@@ -143,7 +140,6 @@
          ?id <- (object (is-a FlatList) 
                         (Contents $?a ?b $?c))
          (object (is-a FlatList) 
-
                  (ID ?b) 
                  (Contents $?j))
          =>
@@ -155,12 +151,10 @@
          flat list is checked to see if it is a _proper_ subset of the second"
          (Stage ClaimOwnership $?)
          ?f0 <- (object (is-a FlatList) 
-
                         (ID ?i0) 
                         (Contents $?c0) 
                         (Parent ?p0))
          ?f1 <- (object (is-a FlatList) 
-
                         (ID ?i1&~?i0) 
                         (Contents $?c1) 
                         (Parent ?p1))
@@ -178,7 +172,6 @@
                         (Parent ?p) 
                         (Contents $? ?b $?))
          (object (is-a BasicBlock) 
-
                  (ID ?b))
          =>
          (assert (claim ?p owns ?b)))
@@ -188,12 +181,10 @@
          same elements as a second one."
          (Stage ClaimOwnership $?)
          ?f0 <- (object (is-a FlatList) 
-
                         (ID ?i0) 
                         (Contents $?c0) 
                         (Parent ?p0))
          ?f1 <- (object (is-a FlatList) 
-
                         (ID ?i1&~?i0) 
                         (Contents $?c1) 
                         (Parent ?p1))
@@ -223,10 +214,8 @@
          (Stage Arbitrate $?)
          ?f0 <- (claim ?first equivalent ?second)
          (object (is-a Loop) 
-
                  (ID ?first))
          (object (is-a Region&~Loop) 
-
                  (ID ?second))
          =>
          (retract ?f0)
@@ -241,10 +230,8 @@
          (Stage Arbitrate $?)
          ?f0 <- (claim ?first equivalent ?second)
          (object (is-a Loop) 
-
                  (ID ?second))
          (object (is-a Region&~Loop) 
-
                  (ID ?first))
          =>
          (retract ?f0)
@@ -311,7 +298,6 @@
 (defrule PropagateBlockProducers
          (Stage ModificationPropagation $?)
          (object (is-a BasicBlock) 
-
                  (ID ?b) 
                  (Parent ?r) 
                  (Produces $?produces))
@@ -322,11 +308,9 @@
          (Stage ModificationPropagation $?)
          ?fct <- (Give ?r from ? the following produced items $?produced)
          ?region <- (object (is-a Region) 
-
                             (ID ?r) 
                             (Parent ?p))
          (exists (object (is-a Region) 
-
                          (ID ?p)))
          =>
          (retract ?fct)
@@ -337,7 +321,8 @@
          (Stage ModificationPropagation $?)
          ?fct <- (Give ?r from ? the following produced items $?produced)
          ?region <- (object (is-a Region)
-                            (ID ?r) (Parent ?p))
+                            (ID ?r) 
+                            (Parent ?p))
          (not (exists (object (is-a Region)
                               (ID ?p))))
          =>
@@ -346,11 +331,13 @@
 ;------------------------------------------------------------------------------
 (defrule IdentifyNonLocalDependencies
          (Stage ModificationPropagation $?)
-         ?i0 <- (object (is-a Instruction) (Parent ?p)
+         ?i0 <- (object (is-a Instruction) 
+                        (Parent ?p)
                         (ID ?t0) 
                         (Operands $? ?op $?))
          (object (is-a TaggedObject)
-                 (ID ?op) (Parent ~?p))
+                 (ID ?op) 
+                 (Parent ~?p))
          ;(test (not (member$ ?op (send ?i0 get-NonLocalDependencies))))
          =>
          ;since we don't copy the set of producers at the start anymore we
@@ -379,8 +366,10 @@
 (defrule PopulateDeterminant
          (Stage DeterminantPopulation $?)
          ?fct <- (claim ?a owns ?b)
-         ?obj <- (object (is-a OwnershipDeterminant) (Parent ?b))
-         ?obj2 <- (object (is-a OwnershipDeterminant) (Parent ?a))
+         ?obj <- (object (is-a OwnershipDeterminant)
+                         (Parent ?b))
+         ?obj2 <- (object (is-a OwnershipDeterminant)
+                          (Parent ?a))
          =>
          (retract ?fct)
          (object-pattern-match-delay 
@@ -389,34 +378,47 @@
 ;------------------------------------------------------------------------------
 (defrule DetermineIndirectClaim
          (Stage DeterminantResolution $?)
-         ?t0 <- (object (is-a OwnershipDeterminant) (Parent ?b) 
-                        (Claims $?v ?a $?x) (IndirectClaims $?ic))
-         (object (is-a OwnershipDeterminant) (Parent ~?b) 
-                 (PotentialChildren $? ?b $?) (Claims $? ?a $?))
-         ?t1 <- (object (is-a OwnershipDeterminant) (Parent ?a) 
+         ?t0 <- (object (is-a OwnershipDeterminant)
+                        (Parent ?b) 
+                        (Claims $?v ?a $?x)
+                        (IndirectClaims $?ic))
+         (object (is-a OwnershipDeterminant)
+                 (Parent ~?b) 
+                 (PotentialChildren $? ?b $?)
+                 (Claims $? ?a $?))
+         ?t1 <- (object (is-a OwnershipDeterminant)
+                        (Parent ?a) 
                         (PotentialChildren $?t ?b $?r))
          =>
          ;let's see if this is faster
          (object-pattern-match-delay 
-           (modify-instance ?t0 (IndirectClaims ?ic ?a) (Claims ?v ?x))
+           (modify-instance ?t0 (IndirectClaims ?ic ?a)
+                            (Claims ?v ?x))
            (modify-instance ?t1 (PotentialChildren ?t ?r))))
 ;------------------------------------------------------------------------------
 (defrule DetermineIndirectIndirectClaim
          (Stage DeterminantIndirectResolution $?)
-         ?t0 <- (object (is-a OwnershipDeterminant) (Parent ?b) 
-                        (Claims $?l ?a $?x) (IndirectClaims $?ic))
-         (object (is-a OwnershipDeterminant) (Parent ~?b&~?a) 
-                 (IndirectClaims $? ?a $?) (PotentialChildren $? ?b $?))
-         ?t1 <- (object (is-a OwnershipDeterminant) (Parent ?a)
+         ?t0 <- (object (is-a OwnershipDeterminant)
+                        (Parent ?b) 
+                        (Claims $?l ?a $?x)
+                        (IndirectClaims $?ic))
+         (object (is-a OwnershipDeterminant)
+                 (Parent ~?b&~?a) 
+                 (IndirectClaims $? ?a $?)
+                 (PotentialChildren $? ?b $?))
+         ?t1 <- (object (is-a OwnershipDeterminant)
+                        (Parent ?a)
                         (PotentialChildren $?z ?b $?q))
          =>
          (object-pattern-match-delay 
-           (modify-instance ?t0 (IndirectClaims ?ic ?a) (Claims ?l ?x))
+           (modify-instance ?t0 (IndirectClaims ?ic ?a)
+                            (Claims ?l ?x))
            (modify-instance ?t1 (PotentialChildren ?z ?q))))
 ;------------------------------------------------------------------------------
 (defrule DeleteNonExistentReferences
          (Stage Fixup $?)
-         ?region <- (object (is-a Region) (Contents $? ?b $?))
+         ?region <- (object (is-a Region)
+                            (Contents $? ?b $?))
          (not (exists (object
                         (ID ?b))))
          =>
@@ -426,7 +428,9 @@
 ;------------------------------------------------------------------------------
 (defrule UpdateOwnerOfTargetRegion
          (Stage FixupUpdate $?)
-         (object (is-a OwnershipDeterminant) (Parent ?p) (Claims ?a))
+         (object (is-a OwnershipDeterminant)
+                 (Parent ?p)
+                 (Claims ?a))
          ?obj <- (object (is-a Region)
                          (ID ?p))
          =>
@@ -434,7 +438,8 @@
 ;------------------------------------------------------------------------------
 (defrule UpdateOwnerOfTargetBasicBlock
          (Stage FixupUpdate $?)
-         (object (is-a OwnershipDeterminant) (Parent ?p) 
+         (object (is-a OwnershipDeterminant)
+                 (Parent ?p) 
                  (Claims ?a))
          ?obj <- (object (is-a BasicBlock)
                          (ID ?p))
@@ -443,10 +448,12 @@
 ;------------------------------------------------------------------------------
 (defrule AddNewChildToTargetRegion
          (Stage FixupUpdate $?)
-         (object (is-a OwnershipDeterminant) (Parent ?p)
+         (object (is-a OwnershipDeterminant)
+                 (Parent ?p)
                  (PotentialChildren $? ?a $?))
          ?region <- (object (is-a Region)
-                            (ID ?p) (Contents $?c))
+                            (ID ?p)
+                            (Contents $?c))
          (test (not (member$ ?a ?c)))
          =>
          (slot-insert$ ?region Contents 1 ?a))
@@ -465,17 +472,19 @@
          necessary to remove leftover entries in other regions"
          (Stage FixupRename $?)
          ?r <- (object (is-a Region)
-                       (ID ?t) (Contents $?a ?b $?c))
+                       (ID ?t)
+                       (Contents $?a ?b $?c))
          (object (is-a TaggedObject)
-                 (ID ?b) (Parent ~?t))
+                 (ID ?b)
+                 (Parent ~?t))
          =>
          (modify-instance ?r (Contents $?a $?c)))
 ;------------------------------------------------------------------------------
 (defrule FAILURE-TooManyClaimsOfOwnership
          (Stage Fixup $?)
-         (object (is-a OwnershipDeterminant) (Parent ?a) 
+         (object (is-a OwnershipDeterminant)
+                 (Parent ?a) 
                  (Claims $?z&:(> (length$ ?z) 1))
-
                  (ID ?name))
          =>
          (printout t "ERROR: " ?name " has more than one claim of ownership on"
@@ -484,10 +493,14 @@
 ;------------------------------------------------------------------------------
 (defrule FAILURE-NoRemainingClaimsForRegion
          (Stage Fixup $?)
-         (object (is-a OwnershipDeterminant) (Parent ?a) (Claims)
-                 (PotentialChildren $?pc) (IndirectClaims $?ic))
+         (object (is-a OwnershipDeterminant)
+                 (Parent ?a)
+                 (Claims)
+                 (PotentialChildren $?pc)
+                 (IndirectClaims $?ic))
          (object (is-a Region)
-                 (ID ?a) (IsTopLevelRegion FALSE))
+                 (ID ?a)
+                 (IsTopLevelRegion FALSE))
          =>
          (printout t "ERROR: " ?a " has no remaining claims!" crlf 
                    ?a " has " $?pc " as it's potential children." crlf
@@ -496,8 +509,11 @@
 ;------------------------------------------------------------------------------
 (defrule FAILURE-NoRemainingClaimsForBasicBlock
          (Stage Fixup $?)
-         (object (is-a OwnershipDeterminant) (Parent ?a) (Claims)
-                 (PotentialChildren $?pc) (IndirectClaims $?ic))
+         (object (is-a OwnershipDeterminant)
+                 (Parent ?a)
+                 (Claims)
+                 (PotentialChildren $?pc)
+                 (IndirectClaims $?ic))
          (object (is-a BasicBlock)
                  (ID ?a)) 
          =>
@@ -531,10 +547,12 @@
          "Creates a frequency counter hint for basic blocks"
          (declare (salience 2))
          (Stage FrequencyAnalysis $?)
-         (object (is-a Region) (Class Region)
+         (object (is-a Region)
+                 (Class Region)
                  (ID ?p) 
                  (CanWavefrontSchedule FALSE))
-         (not (exists (object (is-a FrequencyAnalysis) (Parent ?p))))
+         (not (exists (object (is-a FrequencyAnalysis)
+                              (Parent ?p))))
          =>
          (make-instance of FrequencyAnalysis (Parent ?p)))
 ;------------------------------------------------------------------------------
@@ -546,12 +564,17 @@
          (declare (salience 1))
          (Stage FrequencyAnalysis $?)
          (object (is-a Region)
-                 (ID ?p) (Class Region) (Contents $? ?t $?) 
+                 (ID ?p)
+                 (Class Region)
+                 (Contents $? ?t $?) 
                  (CanWavefrontSchedule FALSE))
          (object (is-a BasicBlock)
-                 (ID ?t) (Parent ?p) (Contents $?insts))
+                 (ID ?t)
+                 (Parent ?p)
+                 (Contents $?insts))
          (test (> (length$ $?insts) 1))
-         ?fa <- (object (is-a FrequencyAnalysis) (Parent ?p))
+         ?fa <- (object (is-a FrequencyAnalysis)
+                        (Parent ?p))
          =>
          (send ?fa .IncrementFrequency))
 ;------------------------------------------------------------------------------
@@ -560,9 +583,12 @@
          candidate for wavefront scheduling. Make a hint that says this."
          ;(declare (salience 200))
          (Stage FrequencyAnalysis $?)
-         ?fa <- (object (is-a FrequencyAnalysis) (Parent ?p) 
-                        (Frequency ?z&:(and (< ?z 100) (> ?z 1))))
-         ?region <- (object (is-a Region) (Class Region)
+         ?fa <- (object (is-a FrequencyAnalysis)
+                        (Parent ?p) 
+                        (Frequency ?z&:(and (< ?z 100)
+                                            (> ?z 1))))
+         ?region <- (object (is-a Region)
+                            (Class Region)
                             (ID ?p))
          =>
          (unmake-instance ?fa)
@@ -574,22 +600,26 @@
 (defrule MarkLocalDependency-Call
          (declare (salience 1))
          (Stage Analysis $?)
-         (object (is-a CallInstruction) (Parent ?p)
+         (object (is-a CallInstruction)
+                 (Parent ?p)
                  (ID ?t0) 
                  (ArgumentOperands $? ?o $?))
          (object (is-a Instruction)
-                 (ID ?o) (Parent ?p))
+                 (ID ?o)
+                 (Parent ?p))
          =>
          (assert (Instruction ?o produces ?t0)
                  (Instruction ?t0 consumes ?o)))
 ;------------------------------------------------------------------------------
 (defrule MarkLocalDependency 
          (Stage Analysis $?)
-         ?i0 <- (object (is-a Instruction&~CallInstruction) (Parent ?p)
+         ?i0 <- (object (is-a Instruction&~CallInstruction)
+                        (Parent ?p)
                         (ID ?t0) 
                         (Operands $? ?o $?))
          (object (is-a Instruction)
-                 (ID ?o) (Parent ?p))
+                 (ID ?o)
+                 (Parent ?p))
          =>
          (assert (Instruction ?o produces ?t0)
                  (Instruction ?t0 consumes ?o)))
@@ -597,9 +627,11 @@
 (defrule MarkInstructionsThatHappenBeforeCall-WritesToMemory
          (Stage Analysis $?)
          (object (is-a BasicBlock)
-                 (ID ?v) (Contents $?before ?n0 $?))
+                 (ID ?v)
+                 (Contents $?before ?n0 $?))
          (object (is-a CallInstruction)
-                 (ID ?n0) (Parent ?v) 
+                 (ID ?n0)
+                 (Parent ?v) 
                  (MayWriteToMemory TRUE))
          =>
          (progn$ (?n1 ?before)
@@ -609,9 +641,11 @@
 (defrule MarkInstructionsThatHappenBeforeCall-HasSideEffects
          (Stage Analysis $?)
          (object (is-a BasicBlock)
-                 (ID ?p) (Contents $?a ?n0 $?))
+                 (ID ?p)
+                 (Contents $?a ?n0 $?))
          (object (is-a CallInstruction)
-                 (ID ?n0) (Parent ?p)
+                 (ID ?n0)
+                 (Parent ?p)
                  (MayHaveSideEffects TRUE))
          =>
          (progn$ (?n1 ?a)
@@ -623,9 +657,11 @@
          call instruction if it turns out that the call could modify memory."
          (Stage Analysis $?)
          (object (is-a BasicBlock)
-                 (ID ?p) (Contents $? ?name $?rest))
+                 (ID ?p)
+                 (Contents $? ?name $?rest))
          (object (is-a CallInstruction)
-                 (ID ?name) (Parent ?p)
+                 (ID ?name)
+                 (Parent ?p)
                  (MayWriteToMemory TRUE))
          =>
          (assert (Element ?p has a CallBarrier))
@@ -639,9 +675,11 @@
          call instruction if it turns out that the call is inline asm."
          (Stage Analysis $?)
          (object (is-a BasicBlock)
-                 (ID ?p) (Contents $? ?name $?rest))
+                 (ID ?p)
+                 (Contents $? ?name $?rest))
          (object (is-a CallInstruction)
-                 (ID ?name) (Parent ?p) 
+                 (ID ?name)
+                 (Parent ?p) 
                  (IsInlineAsm TRUE))
          =>
          (assert (Element ?p has a CallBarrier))
@@ -655,10 +693,12 @@
          call instruction if it turns out that the call has side effects."
          (Stage Analysis $?)
          (object (is-a CallInstruction)
-                 (ID ?name) (Parent ?p)
+                 (ID ?name)
+                 (Parent ?p)
                  (MayHaveSideEffects TRUE)) 
          (object (is-a BasicBlock)
-                 (ID ?p) (Contents $? ?name $?rest))
+                 (ID ?p)
+                 (Contents $? ?name $?rest))
          =>
          (assert (Element ?p has a CallBarrier))
          (progn$ (?following ?rest)
@@ -671,7 +711,8 @@
          (Stage Analysis-Update $?)
          ?fct <- (Element ?z has a CallBarrier)
          ?d <- (object (is-a Diplomat)
-                       (ID ?z) (Parent ?p) 
+                       (ID ?z)
+                       (Parent ?p) 
                        (HasCallBarrier FALSE))
          (exists (object (is-a Diplomat)
                          (ID ?p)))
@@ -685,7 +726,8 @@
          (Stage Analysis-Update $?)
          ?fct <- (Element ?z has a CallBarrier)
          ?d <- (object (is-a Diplomat)
-                       (ID ?z) (Parent ?p) 
+                       (ID ?z)
+                       (Parent ?p) 
                        (HasCallBarrier TRUE))
          (exists (object (is-a Diplomat)
                          (ID ?p)))
@@ -698,7 +740,8 @@
          (Stage Analysis-Update $?)
          ?fct <- (Element ?z has a CallBarrier)
          ?d <- (object (is-a Diplomat)
-                       (ID ?z) (Parent ?p) 
+                       (ID ?z)
+                       (Parent ?p) 
                        (HasCallBarrier FALSE))
          (not (exists (object (is-a Diplomat)
                               (ID ?p))))
@@ -711,7 +754,8 @@
          (Stage Analysis-Update $?)
          ?fct <- (Element ?z has a CallBarrier)
          ?d <- (object (is-a Diplomat)
-                       (ID ?z) (Parent ?p) 
+                       (ID ?z)
+                       (Parent ?p) 
                        (HasCallBarrier TRUE))
          (not (exists (object (is-a Diplomat)
                               (ID ?p))))
@@ -739,39 +783,54 @@
 ;------------------------------------------------------------------------------
 (defrule StoreToLoadDependency
          (Stage ExtendedMemoryAnalysis $?)
-         (object (is-a StoreInstruction) (Parent ?p)
+         (object (is-a StoreInstruction)
+                 (Parent ?p)
                  (ID ?t0)
-                 (TimeIndex ?ti0) (MemoryTarget ?sym0))
-         (object (is-a LoadInstruction) (Parent ?p)
+                 (TimeIndex ?ti0)
+                 (MemoryTarget ?sym0))
+         (object (is-a LoadInstruction)
+                 (Parent ?p)
                  (ID ?t1) 
-                 (TimeIndex ?ti1&:(< ?ti0 ?ti1)) (MemoryTarget ?sym1))
-         (test (or (eq ?sym0 ?sym1) (eq ?sym0 UNKNOWN)))
+                 (TimeIndex ?ti1&:(< ?ti0 ?ti1))
+                 (MemoryTarget ?sym1))
+         (test (or (eq ?sym0 ?sym1)
+                   (eq ?sym0 UNKNOWN)))
          =>
          (assert (Instruction ?t1 consumes ?t0)
                  (Instruction ?t0 produces ?t1)))
 ;------------------------------------------------------------------------------
 (defrule StoreToStoreDependency
          (Stage ExtendedMemoryAnalysis $?)
-         (object (is-a StoreInstruction) (Parent ?p)
+         (object (is-a StoreInstruction)
+                 (Parent ?p)
                  (ID ?t0)
-                 (TimeIndex ?ti0) (MemoryTarget ?sym0))
-         (object (is-a StoreInstruction) (Parent ?p)
+                 (TimeIndex ?ti0)
+                 (MemoryTarget ?sym0))
+         (object (is-a StoreInstruction)
+                 (Parent ?p)
                  (ID ?t1) 
-                 (TimeIndex ?ti1&:(< ?ti0 ?ti1)) (MemoryTarget ?sym1))
-         (test (or (eq ?sym0 ?sym1) (eq ?sym0 UNKNOWN)))
+                 (TimeIndex ?ti1&:(< ?ti0 ?ti1))
+                 (MemoryTarget ?sym1))
+         (test (or (eq ?sym0 ?sym1)
+                   (eq ?sym0 UNKNOWN)))
          =>
          (assert (Instruction ?t1 consumes ?t0)
                  (Instruction ?t0 produces ?t1)))
 ;------------------------------------------------------------------------------
 (defrule LoadToStoreDependency
          (Stage ExtendedMemoryAnalysis $?)
-         (object (is-a LoadInstruction) (Parent ?p)
+         (object (is-a LoadInstruction)
+                 (Parent ?p)
                  (ID ?t0)
-                 (TimeIndex ?ti0) (MemoryTarget ?sym0)) 
-         (object (is-a StoreInstruction) (Parent ?p)
+                 (TimeIndex ?ti0)
+                 (MemoryTarget ?sym0)) 
+         (object (is-a StoreInstruction)
+                 (Parent ?p)
                  (ID ?t1) 
-                 (TimeIndex ?ti1&:(< ?ti0 ?ti1)) (MemoryTarget ?sym1))
-         (test (or (eq ?sym0 ?sym1) (eq ?sym0 UNKNOWN)))
+                 (TimeIndex ?ti1&:(< ?ti0 ?ti1))
+                 (MemoryTarget ?sym1))
+         (test (or (eq ?sym0 ?sym1)
+                   (eq ?sym0 UNKNOWN)))
          =>
          (assert (Instruction ?t1 consumes ?t0)
                  (Instruction ?t0 produces ?t1)))
@@ -793,7 +852,8 @@
          (declare (salience 5))
          (Stage Analysis $?)
          (object (is-a LoadInstruction)
-                 (ID ?t0) (Operands ?target $?))
+                 (ID ?t0)
+                 (Operands ?target $?))
          =>
          (assert (Analyze ?target for load ?t0)))
 ;------------------------------------------------------------------------------
@@ -817,14 +877,16 @@
          (Stage Analysis $?)
          ?fct <- (Analyze ?target for load ?t0)
          ?i0 <- (object (is-a LoadInstruction)
-                        (ID ?t0) (Parent ?p))
+                        (ID ?t0)
+                        (Parent ?p))
          (object (is-a GetElementPointerInstruction)
                  (ID ?target) 
                  (Operands ?a $?))
          (object (is-a ~AllocaInstruction&~Constant)
                  (ID ?a))
          (object (is-a BasicBlock)
-                 (ID ?p) (Parent ?r))
+                 (ID ?p)
+                 (Parent ?r))
          =>
          (retract ?fct)
          (modify-instance ?i0 (MemoryTarget UNKNOWN))
@@ -840,7 +902,8 @@
          (Stage Analysis $?)
          ?fct <- (Analyze ?target for load ?t0)
          ?i0 <- (object (is-a LoadInstruction)
-                        (ID ?t0) (Parent ?p))
+                        (ID ?t0)
+                        (Parent ?p))
          (object (is-a AllocaInstruction)
                  (ID ?target))
          =>
@@ -856,7 +919,8 @@
          (Stage Analysis $?)
          ?fct <- (Analyze ?target for load ?t0)
          ?i0 <- (object (is-a LoadInstruction)
-                        (ID ?t0) (Parent ?p))
+                        (ID ?t0)
+                        (Parent ?p))
          (object (is-a Constant)
                  (ID ?target))
          =>
@@ -872,7 +936,8 @@
          (Stage Analysis $?)
          ?fct <- (Analyze ?target for load ?t0)
          ?i0 <- (object (is-a LoadInstruction)
-                        (ID ?t0) (Parent ?p))
+                        (ID ?t0)
+                        (Parent ?p))
          (object (is-a GetElementPointerInstruction)
                  (ID ?target) 
                  (Operands ?a $?))
@@ -891,7 +956,8 @@
          (Stage Analysis $?)
          ?fct <- (Analyze ?target for load ?t0)
          ?i0 <- (object (is-a LoadInstruction)
-                        (ID ?t0) (Parent ?p))
+                        (ID ?t0)
+                        (Parent ?p))
          (object (is-a GetElementPointerInstruction)
                  (ID ?target) 
                  (Operands ?a $?))
@@ -910,9 +976,11 @@
          (Stage Analysis $?)
          ?fct <- (Analyze ?target for load ?t0)
          ?i0 <- (object (is-a LoadInstruction)
-                        (ID ?t0) (Parent ?p))
+                        (ID ?t0)
+                        (Parent ?p))
          (object (is-a BasicBlock)
-                 (ID ?p) (Parent ?r))
+                 (ID ?p)
+                 (Parent ?r))
          =>
          (retract ?fct)
          (modify-instance ?i0 (MemoryTarget UNKNOWN))
@@ -927,7 +995,8 @@
          (declare (salience 4))
          (Stage Analysis $?)
          ?fct <- (Analyze ?target for store ?t0)
-         ?i0 <- (object (is-a StoreInstruction) (Parent ?p)
+         ?i0 <- (object (is-a StoreInstruction)
+                        (Parent ?p)
                         (ID ?t0))
          (object (is-a GetElementPointerInstruction)
                  (ID ?target) 
@@ -935,7 +1004,8 @@
          (object (is-a ~AllocaInstruction&~Constant)
                  (ID ?a))
          (object (is-a BasicBlock)
-                 (ID ?p) (Parent ?r))
+                 (ID ?p)
+                 (Parent ?r))
          =>
          (modify-instance ?i0 (MemoryTarget UNKNOWN))
          (retract ?fct)
@@ -951,7 +1021,8 @@
          (Stage Analysis $?)
          ?fct <- (Analyze ?target for store ?t0)
          ?i0 <- (object (is-a StoreInstruction)
-                        (ID ?t0) (Parent ?p))
+                        (ID ?t0)
+                        (Parent ?p))
          (object (is-a AllocaInstruction)
                  (ID ?target))
          =>
@@ -967,7 +1038,8 @@
          (Stage Analysis $?)
          ?fct <- (Analyze ?target for store ?t0)
          ?i0 <- (object (is-a StoreInstruction)
-                        (ID ?t0) (Parent ?p))
+                        (ID ?t0)
+                        (Parent ?p))
          (object (is-a Constant)
                  (ID ?target))
          =>
@@ -983,7 +1055,8 @@
          (Stage Analysis $?)
          ?fct <- (Analyze ?target for store ?t0)
          ?i0 <- (object (is-a StoreInstruction)
-                        (ID ?t0) (Parent ?p))
+                        (ID ?t0)
+                        (Parent ?p))
          (object (is-a AllocaInstruction)
                  (ID ?target))
          =>
@@ -999,7 +1072,8 @@
          (Stage Analysis $?)
          ?fct <- (Analyze ?target for store ?t0)
          ?i0 <- (object (is-a StoreInstruction)
-                        (ID ?t0) (Parent ?p))
+                        (ID ?t0)
+                        (Parent ?p))
          (object (is-a Constant)
                  (ID ?target))
          =>
@@ -1015,7 +1089,8 @@
          (Stage Analysis $?)
          ?fct <- (Analyze ?target for store ?t0)
          ?i0 <- (object (is-a StoreInstruction)
-                        (ID ?t0) (Parent ?p))
+                        (ID ?t0)
+                        (Parent ?p))
          (object (is-a GetElementPointerInstruction)
                  (ID ?target) 
                  (Operands ?a $?))
@@ -1034,7 +1109,8 @@
          (Stage Analysis $?)
          ?fct <- (Analyze ?target for store ?t0)
          ?i0 <- (object (is-a StoreInstruction)
-                        (ID ?t0) (Parent ?p))
+                        (ID ?t0)
+                        (Parent ?p))
          (object (is-a GetElementPointerInstruction)
                  (ID ?target) 
                  (Operands ?a $?))
@@ -1053,9 +1129,11 @@
          (Stage Analysis $?)
          ?fct <- (Analyze ?target for store ?t0)
          ?i0 <- (object (is-a StoreInstruction)
-                        (ID ?t0) (Parent ?p))
+                        (ID ?t0)
+                        (Parent ?p))
          (object (is-a BasicBlock)
-                 (ID ?p) (Parent ?r))
+                 (ID ?p)
+                 (Parent ?r))
          =>
          (retract ?fct)
          (modify-instance ?i0 (MemoryTarget UNKNOWN))
@@ -1086,7 +1164,8 @@
          (Stage Analysis $?)
          ?fct <- (element ?p reads from $?t)
          ?bb <- (object (is-a Diplomat)
-                        (ID ?p) (Parent ?q))
+                        (ID ?p)
+                        (Parent ?q))
          (not (exists (object (is-a Diplomat)
                               (ID ?q))))
          =>
@@ -1098,7 +1177,8 @@
          (Stage Analysis $?)
          ?fct <- (element ?p reads from $?t)
          ?bb <- (object (is-a Diplomat)
-                        (ID ?p) (Parent ?q))
+                        (ID ?p)
+                        (Parent ?q))
          (exists (object (is-a Diplomat)
                          (ID ?q)))
          =>
@@ -1111,7 +1191,8 @@
          (Stage Analysis $?)
          ?fct <- (element ?p writes to $?t)
          ?bb <- (object (is-a Diplomat)
-                        (ID ?p) (Parent ?q))
+                        (ID ?p)
+                        (Parent ?q))
          (not (exists (object (is-a Diplomat)
                               (ID ?q))))
          =>
@@ -1123,7 +1204,8 @@
          (Stage Analysis $?)
          ?fct <- (element ?p writes to $?t)
          ?bb <- (object (is-a Diplomat)
-                        (ID ?p) (Parent ?q))
+                        (ID ?p)
+                        (Parent ?q))
          (exists (object (is-a Diplomat)
                          (ID ?q)))
          =>
@@ -1136,7 +1218,8 @@
          (Stage Analysis $?)
          ?fct <- (Element ?b has a MemoryBarrier)
          ?obj <- (object (is-a Diplomat)
-                         (ID ?b) (HasMemoryBarrier FALSE)
+                         (ID ?b)
+                         (HasMemoryBarrier FALSE)
                          (Parent ?p))
          (exists (object (is-a Diplomat)
                          (ID ?p)))
@@ -1150,7 +1233,8 @@
          (Stage Analysis $?)
          ?fct <- (Element ?b has a MemoryBarrier)
          ?obj <- (object (is-a Diplomat)
-                         (ID ?b) (HasMemoryBarrier TRUE)
+                         (ID ?b)
+                         (HasMemoryBarrier TRUE)
                          (Parent ?p))
          (exists (object (is-a Diplomat)
                          (ID ?p)))
@@ -1163,7 +1247,8 @@
          (Stage Analysis $?)
          ?fct <- (Element ?b has a MemoryBarrier)
          ?obj <- (object (is-a Diplomat)
-                         (ID ?b) (HasMemoryBarrier FALSE)
+                         (ID ?b)
+                         (HasMemoryBarrier FALSE)
                          (Parent ?p))
          (not (exists (object (is-a Diplomat)
                               (ID ?p))))
@@ -1176,7 +1261,8 @@
          (Stage Analysis $?)
          ?fct <- (Element ?b has a MemoryBarrier)
          ?obj <- (object (is-a Diplomat)
-                         (ID ?b) (HasMemoryBarrier TRUE)
+                         (ID ?b)
+                         (HasMemoryBarrier TRUE)
                          (Parent ?p))
          (not (exists (object (is-a Diplomat)
                               (ID ?p))))
@@ -1245,8 +1331,10 @@
          ?f0 <- (Instruction ?id consumed $?t0)
          ?f1 <- (Instruction ?id produced $?t1)
          ?inst <- (object (is-a Instruction)
-                          (ID ?id) (Consumers $?c) 
-                          (Producers $?p) (LocalDependencies $?ld))
+                          (ID ?id)
+                          (Consumers $?c) 
+                          (Producers $?p)
+                          (LocalDependencies $?ld))
          =>
          (retract ?f0 ?f1)
          (bind ?cs $?c)
@@ -1261,7 +1349,8 @@
                      (bind ?lds (insert$ ?lds 1 ?target)))
                    (if (not (member$ ?target ?ps)) then
                      (bind ?ps (insert$ ?ps 1 ?target))))
-           (modify-instance ?inst (Consumers ?cs) (Producers ?ps) 
+           (modify-instance ?inst (Consumers ?cs)
+                            (Producers ?ps) 
                             (LocalDependencies ?lds))))
 ;------------------------------------------------------------------------------
 (defrule InjectConsumers
@@ -1269,7 +1358,8 @@
          (Stage ExtendedMemoryAnalysis-Inject $?)
          ?fct <- (Instruction ?id consumed $?targets)
          ?inst <- (object (is-a Instruction)
-                          (ID ?id) (Consumers $?cs))
+                          (ID ?id)
+                          (Consumers $?cs))
          =>
          (retract ?fct)
          (bind ?cons $?cs)
@@ -1284,7 +1374,8 @@
          (Stage ExtendedMemoryAnalysis-Inject $?)
          ?fct <- (Instruction ?id produced $?targets)
          ?inst <- (object (is-a Instruction)
-                          (ID ?id) (Producers $?ps)
+                          (ID ?id)
+                          (Producers $?ps)
                           (LocalDependencies $?ld))
          =>
          (retract ?fct)
@@ -1296,17 +1387,20 @@
                      (bind ?lds (insert$ ?lds 1 ?target)))
                    (if (not (member$ ?target ?prods)) then
                      (bind ?prods (insert$ ?prods 1 ?target))))
-           (modify-instance ?inst (Producers ?prods) (LocalDependencies ?lds))))
+           (modify-instance ?inst (Producers ?prods)
+                            (LocalDependencies ?lds))))
 ;------------------------------------------------------------------------------
 (defrule SetifyInstructionProducers
          (Stage ExtendedMemoryAnalysis-MakeSet $?)
-         ?inst <- (object (is-a Instruction) (Producers $?a ?b $?c ?b $?d))
+         ?inst <- (object (is-a Instruction)
+                          (Producers $?a ?b $?c ?b $?d))
          =>
          (modify-instance ?inst (Producers $?a ?b $?c $?d)))
 ;------------------------------------------------------------------------------
 (defrule SetifyInstructionConsumers
          (Stage ExtendedMemoryAnalysis-MakeSet $?)
-         ?inst <- (object (is-a Instruction) (Consumers $?a ?b $?c ?b $?d))
+         ?inst <- (object (is-a Instruction)
+                          (Consumers $?a ?b $?c ?b $?d))
          =>
          (modify-instance ?inst (Consumers $?a ?b $?c $?d)))
 ;------------------------------------------------------------------------------
@@ -1330,26 +1424,35 @@
 (defrule StartPathConstruction-NestedEntrance
          (declare (salience 3))
          (Stage Path $?)
-         ?r0 <- (object (is-a Region) (CanWavefrontSchedule TRUE) 
+         ?r0 <- (object (is-a Region)
+                        (CanWavefrontSchedule TRUE) 
                         (Entrances $? ?a $?)
-                        (ID ?n) (Contents $? ?z $?))
+                        (ID ?n)
+                        (Contents $? ?z $?))
          (object (is-a Region)
-                 (ID ?z) (Parent ?n) (Entrances $? ?a $?))
+                 (ID ?z)
+                 (Parent ?n)
+                 (Entrances $? ?a $?))
          (object (is-a BasicBlock)
-                 (ID ?a) (Parent ~?n))
+                 (ID ?a)
+                 (Parent ~?n))
          =>
-         (make-instance of Path (Parent ?n) (Contents ?z)))
+         (make-instance of Path (Parent ?n)
+                        (Contents ?z)))
 ;------------------------------------------------------------------------------
 (defrule StartPathConstruction-BasicBlock
          (declare (salience 3))
          (Stage Path $?)
-         ?r0 <- (object (is-a Region) (CanWavefrontSchedule TRUE) 
+         ?r0 <- (object (is-a Region)
+                        (CanWavefrontSchedule TRUE) 
                         (Entrances $? ?a $?)
                         (ID ?n))
          (object (is-a BasicBlock)
-                 (ID ?a) (Parent ?n))
+                 (ID ?a)
+                 (Parent ?n))
          =>
-         (make-instance of Path (Parent ?n) (Contents ?a)))
+         (make-instance of Path (Parent ?n)
+                        (Contents ?a)))
 ;------------------------------------------------------------------------------
 ; Contains rules that add paths that a given block is a part of 
 ; (path update rules)
@@ -1372,8 +1475,10 @@
          "Adds the given path name to the target diplomat"
          (declare (salience 1))
          (Stage Path $?)
-         (object (is-a Path) (Closed TRUE)
-                 (ID ?i) (Contents $? ?b $?))
+         (object (is-a Path)
+                 (Closed TRUE)
+                 (ID ?i)
+                 (Contents $? ?b $?))
          ?d <- (object (is-a Diplomat)
                        (ID ?b))
          (test (not (member$ ?i (send ?d get-Paths))))
@@ -1382,8 +1487,10 @@
 
 (defrule TraversePathForElementInjection
          (Stage PathUpdate $?)
-         (object (is-a Path) (Closed TRUE)
-                 (ID ?p) (Contents $? ?a ?b $?))
+         (object (is-a Path)
+                 (Closed TRUE)
+                 (ID ?p)
+                 (Contents $? ?a ?b $?))
          ?o0 <- (object (is-a Diplomat)
                         (ID ?a))
          ?o1 <- (object (is-a Diplomat)
@@ -1401,7 +1508,8 @@
          (Stage Path $?)
          (Debug)
          (Paths)
-         (object (is-a Hint) (Type Path) 
+         (object (is-a Hint)
+                 (Type Path) 
                  (Closed TRUE) 
 
                  (ID ?name) 
@@ -1419,8 +1527,10 @@
          (declare (salience 1))
          (Stage Path $?)
          ?fct <- (Add ?next to ?id)
-         ?hint <- (object (is-a Path) (Closed FALSE)
-                          (ID ?id) (Parent ?p) 
+         ?hint <- (object (is-a Path)
+                          (Closed FALSE)
+                          (ID ?id)
+                          (Parent ?p) 
                           (ReferenceCount ?rc&:(> ?rc 1)))
          =>
          (send ?hint .DecrementReferenceCount)
@@ -1436,7 +1546,8 @@
          (declare (salience 1))
          (Stage Path $?)
          ?fct <- (Add ?next to ?id)
-         ?hint <- (object (is-a Path) (Closed FALSE)
+         ?hint <- (object (is-a Path)
+                          (Closed FALSE)
                           (ID ?id) 
                           (ReferenceCount 1))
          =>
@@ -1450,7 +1561,8 @@
          (declare (salience 1))
          (Stage Path $?)
          ?fct <- (Close ?id with ?bb)
-         ?hint <- (object (is-a Path) (Closed FALSE)
+         ?hint <- (object (is-a Path)
+                          (Closed FALSE)
                           (ID ?id) 
                           (ReferenceCount 1))
          =>
@@ -1465,8 +1577,10 @@
          (declare (salience 1))
          (Stage Path $?)
          ?fct <- (Close ?id with ?bb)
-         ?hint <- (object (is-a Path) (Closed FALSE)
-                          (ID ?id) (Parent ?p)
+         ?hint <- (object (is-a Path)
+                          (Closed FALSE)
+                          (ID ?id)
+                          (Parent ?p)
                           (ReferenceCount ?rc&:(> ?rc 1)))
          =>
          (send ?hint .DecrementReferenceCount)
@@ -1482,15 +1596,18 @@
 (defrule PathConstruction-BasicBlockToBasicBlock
          (declare (salience 2))
          (Stage Path $?)
-         ?path <- (object (is-a Path) (Parent ?p)
+         ?path <- (object (is-a Path)
+                          (Parent ?p)
                           (ID ?id) 
                           (Contents $?before ?curr) 
                           (Closed FALSE))
          (object (is-a BasicBlock)
-                 (ID ?curr) (Parent ?p) 
+                 (ID ?curr)
+                 (Parent ?p) 
                  (Successors $? ?next $?))
          (object (is-a BasicBlock)
-                 (ID ?next) (Parent ?p))
+                 (ID ?next)
+                 (Parent ?p))
          (test (not (member$ ?next (create$ $?before ?curr))))
          =>
          (send ?path .IncrementReferenceCount)
@@ -1499,13 +1616,18 @@
 (defrule PathConstruction-RegionToBasicBlock
          (declare (salience 2))
          (Stage Path $?)
-         ?path <- (object (is-a Path) (Closed FALSE) (Parent ?p)
+         ?path <- (object (is-a Path)
+                          (Closed FALSE)
+                          (Parent ?p)
                           (ID ?id)
                           (Contents $?before ?curr))
          (object (is-a Region)
-                 (ID ?curr) (Parent ?p) (Exits $? ?next $?))
+                 (ID ?curr)
+                 (Parent ?p)
+                 (Exits $? ?next $?))
          (object (is-a BasicBlock)
-                 (ID ?next) (Parent ?p))
+                 (ID ?next)
+                 (Parent ?p))
          (test (not (member$ ?next (create$ $?before ?curr))))
          =>
          (send ?path .IncrementReferenceCount)
@@ -1514,14 +1636,19 @@
 (defrule PathConstruction-BasicBlockToRegion
          (declare (salience 2))
          (Stage Path $?)
-         ?path <- (object (is-a Path) (Closed FALSE) (Parent ?p)
+         ?path <- (object (is-a Path)
+                          (Closed FALSE)
+                          (Parent ?p)
                           (ID ?id) 
                           (Contents $?before ?curr))
          (object (is-a BasicBlock)
-                 (ID ?curr) (Parent ?p) 
+                 (ID ?curr)
+                 (Parent ?p) 
                  (Successors $? ?s $?))
-         (object (is-a Region) (Entrances $? ?s $?)
-                 (ID ?next) (Parent ?p))
+         (object (is-a Region)
+                 (Entrances $? ?s $?)
+                 (ID ?next)
+                 (Parent ?p))
          (test (not (member$ ?next (create$ $?before ?curr))))
          =>
          (send ?path .IncrementReferenceCount)
@@ -1530,14 +1657,21 @@
 (defrule PathConstruction-RegionToRegion
          (declare (salience 2))
          (Stage Path $?)
-         ?path <- (object (is-a Path) (Closed FALSE) (Parent ?p)
+         ?path <- (object (is-a Path)
+                          (Closed FALSE)
+                          (Parent ?p)
                           (ID ?id) 
                           (Contents $?before ?curr))
          (object (is-a Region)
-                 (ID ?curr) (Parent ?p) (Exits $? ?e $?))
+                 (ID ?curr)
+                 (Parent ?p)
+                 (Exits $? ?e $?))
          (object (is-a Region)
-                 (ID ?next) (Parent ?p) (Entrances $? ?e $?)) 
-         (test (not (member$ ?next (create$ $?before ?curr))))
+                 (ID ?next)
+                 (Parent ?p)
+                 (Entrances $? ?e $?)) 
+         (test (not (member$ ?next 
+                             (create$ $?before ?curr))))
          ; even if the entrance is part of a nested region...we really don't 
          ; care it will still be accurate thanks to the way llvm does things
          =>
@@ -1549,11 +1683,15 @@
          allows this but let's handle it."
          (declare (salience 2))
          (Stage Path $?)
-         ?path <- (object (is-a Path) (Parent ?p)
-                          (ID ?i) (Closed FALSE) 
+         ?path <- (object (is-a Path)
+                          (Parent ?p)
+                          (ID ?i)
+                          (Closed FALSE) 
                           (Contents $? ?a))
          (object (is-a Region)
-                 (ID ?a) (Parent ?p) (Exits))
+                 (ID ?a)
+                 (Parent ?p)
+                 (Exits))
          =>
          (send ?path .IncrementReferenceCount)
          (assert (Close ?i with nil)))
@@ -1563,11 +1701,14 @@
          function"
          (declare (salience 2))
          (Stage Path $?)
-         ?path <- (object (is-a Path) (Parent ?p)
+         ?path <- (object (is-a Path) 
+                          (Parent ?p)
                           (ID ?i) (Closed FALSE) 
                           (Contents $? ?a))
          (object (is-a BasicBlock)
-                 (ID ?a) (Parent ?p) (Successors))
+                 (ID ?a) 
+                 (Parent ?p) 
+                 (Successors))
          =>
          (send ?path .IncrementReferenceCount)
          (assert (Close ?i with nil)))
@@ -1575,15 +1716,20 @@
 (defrule PathConstruction-BasicBlockToBasicBlock-Cycle
          (declare (salience 2))
          (Stage Path $?)
-         ?path <- (object (is-a Path) (Parent ?p)
+         ?path <- (object (is-a Path) 
+                          (Parent ?p)
                           (ID ?id) 
-                          (Contents $?before ?curr) (Closed FALSE))
+                          (Contents $?before ?curr) 
+                          (Closed FALSE))
          (object (is-a BasicBlock)
-                 (ID ?curr) (Parent ?p) 
+                 (ID ?curr) 
+                 (Parent ?p) 
                  (Successors $? ?next $?))
          (object (is-a BasicBlock)
-                 (ID ?next) (Parent ?p))
-         (test (member$ ?next (create$ $?before ?curr)))
+                 (ID ?next) 
+                 (Parent ?p))
+         (test (member$ ?next 
+                        (create$ $?before ?curr)))
          =>
          (send ?path .IncrementReferenceCount)
          (assert (Close ?id with ?next)))
@@ -1591,14 +1737,20 @@
 (defrule PathConstruction-RegionToBasicBlock-Cycle
          (declare (salience 2))
          (Stage Path $?)
-         ?path <- (object (is-a Path) (Closed FALSE) (Parent ?p)
+         ?path <- (object (is-a Path) 
+                          (Closed FALSE) 
+                          (Parent ?p)
                           (ID ?id)
                           (Contents $?before ?curr))
          (object (is-a Region)
-                 (ID ?curr) (Parent ?p) (Exits $? ?next $?))
+                 (ID ?curr)
+                 (Parent ?p) 
+                 (Exits $? ?next $?))
          (object (is-a BasicBlock)
-                 (ID ?next) (Parent ?p))
-         (test (member$ ?next (create$ $?before ?curr)))
+                 (ID ?next) 
+                 (Parent ?p))
+         (test (member$ ?next 
+                        (create$ $?before ?curr)))
          =>
          (send ?path .IncrementReferenceCount)
          (assert (Close ?id with ?next)))
@@ -1606,13 +1758,19 @@
 (defrule PathConstruction-BasicBlockToRegion-Cycle
          (declare (salience 2))
          (Stage Path $?)
-         ?path <- (object (is-a Path) (Closed FALSE) (Parent ?p)
+         ?path <- (object (is-a Path) 
+                          (Closed FALSE) 
+                          (Parent ?p)
                           (ID ?id) 
                           (Contents $?before ?curr))
          (object (is-a BasicBlock)
-                 (ID ?curr) (Parent ?p) (Successors $? ?s $?))
+                 (ID ?curr) 
+                 (Parent ?p) 
+                 (Successors $? ?s $?))
          (object (is-a Region)
-                 (ID ?next) (Parent ?p) (Entrances $? ?s $?))
+                 (ID ?next) 
+                 (Parent ?p) 
+                 (Entrances $? ?s $?))
          (test (member$ ?next (create$ $?before ?curr)))
          =>
          (send ?path .IncrementReferenceCount)
@@ -1621,14 +1779,21 @@
 (defrule PathConstruction-RegionToRegion-Cycle
          (declare (salience 2))
          (Stage Path $?)
-         ?path <- (object (is-a Path) (Closed FALSE) (Parent ?p)
+         ?path <- (object (is-a Path) 
+                          (Closed FALSE) 
+                          (Parent ?p)
                           (ID ?id) 
                           (Contents $?before ?curr))
          (object (is-a Region)
-                 (ID ?curr) (Parent ?p) (Exits $? ?e $?))
+                 (ID ?curr) 
+                 (Parent ?p) 
+                 (Exits $? ?e $?))
          (object (is-a Region)
-                 (ID ?next) (Parent ?p) (Entrances $? ?e $?)) 
-         (test (member$ ?next (create$ $?before ?curr)))
+                 (ID ?next) 
+                 (Parent ?p) 
+                 (Entrances $? ?e $?)) 
+         (test (member$ ?next 
+                        (create$ $?before ?curr)))
          =>
          (send ?path .IncrementReferenceCount)
          (assert (Close ?next with ?id)))
@@ -1638,13 +1803,18 @@
          the current region"
          (declare (salience 2))
          (Stage Path $?)
-         ?path <- (object (is-a Path) (Parent ?p)
-                          (ID ?id) (Contents $? ?curr) 
+         ?path <- (object (is-a Path) 
+                          (Parent ?p)
+                          (ID ?id) 
+                          (Contents $? ?curr) 
                           (Closed FALSE))
          (object (is-a BasicBlock)
-                 (ID ?curr) (Parent ?p) (Successors $? ?e $?))
+                 (ID ?curr) 
+                 (Parent ?p) 
+                 (Successors $? ?e $?))
          (object (is-a Region)
-                 (ID ?p) (Exits $? ?e $?))
+                 (ID ?p) 
+                 (Exits $? ?e $?))
          ;since the current block has an exit for this region we mark it
          =>
          (send ?path .IncrementReferenceCount)
@@ -1653,13 +1823,18 @@
 (defrule PathConstruction-RegionToExit
          (declare (salience 2))
          (Stage Path $?)
-         ?path <- (object (is-a Path) (Closed FALSE) (Parent ?p)
+         ?path <- (object (is-a Path) 
+                          (Closed FALSE) 
+                          (Parent ?p)
                           (ID ?id) 
                           (Contents $? ?c))
          (object (is-a Region)
-                 (ID ?c) (Parent ?p) (Exits $? ?e $?))
+                 (ID ?c) 
+                 (Parent ?p) 
+                 (Exits $? ?e $?))
          (object (is-a Region)
-                 (ID ?p) (Exits $? ?e $?))
+                 (ID ?p) 
+                 (Exits $? ?e $?))
          ; both the inner and outer regions have the same exit...thus the
          ; curent nested region is a terminator for one path
          =>
@@ -1723,23 +1898,29 @@
 (defrule InitializeWavefrontSchedulingForARegion-SelectBlockDirectly
          (declare (salience 2))
          (Stage WavefrontInit $?)
-         (object (is-a Region) (CanWavefrontSchedule TRUE)
+         (object (is-a Region) 
+                 (CanWavefrontSchedule TRUE)
                  (ID ?r) 
                  (Entrances $? ?e $?))
          (object (is-a BasicBlock)
-                 (ID ?e) (Parent ?r))
+                 (ID ?e) 
+                 (Parent ?r))
          =>
          (assert (Add ?e to wavefront for ?r)))
 ;------------------------------------------------------------------------------
 (defrule InitializeWavefrontSchedulingForARegion-AssertRegionInstead
          (declare (salience 2))
          (Stage WavefrontInit $?)
-         (object (is-a Region) (CanWavefrontSchedule TRUE)
+         (object (is-a Region) 
+                 (CanWavefrontSchedule TRUE)
                  (ID ?r) 
                  (Entrances $? ?e $?))
          (object (is-a BasicBlock)
-                 (ID ?e) (Parent ~?r))
-         (object (is-a Region) (Parent ?r) (Entrances $? ?e $?)
+                 (ID ?e)
+                 (Parent ~?r))
+         (object (is-a Region) 
+                 (Parent ?r) 
+                 (Entrances $? ?e $?)
                  (ID ?q))
          =>
          (assert (Add ?q to wavefront for ?r)))
@@ -1787,19 +1968,26 @@
          ?f0 <- (Create wavefront for ?r containing $?w)
          =>
          (retract ?f0)
-         (make-instance of Wavefront (Parent ?r) (Contents ?w)))
+         (make-instance of Wavefront 
+                        (Parent ?r) 
+                        (Contents ?w)))
 ;------------------------------------------------------------------------------
 (defrule ConstructPathAggregateForBlock 
          (declare (salience 100))
          (Stage WavefrontSchedule $?)
          (Substage Init $?)
-         (object (is-a Hint) (Type Wavefront) (Parent ?r) (Contents $? ?e $?))
-         ?bb <- (object (is-a BasicBlock)
-                        (ID ?e) (Contents $?c)) 
+         (object (is-a Hint) 
+                 (Type Wavefront) 
+                 (Parent ?r) 
+                 (Contents $? ?e $?))
+         (object (is-a BasicBlock)
+                 (ID ?e) 
+                 (Contents $?c)) 
          =>
          (assert (Propagate aggregates of ?e))
-         (make-instance of PathAggregate (Parent ?e) (OriginalStopIndex 
-                                                       (- (length$ $?c) 1))))
+         (make-instance of PathAggregate 
+                        (Parent ?e) 
+                        (OriginalStopIndex (- (length$ ?c) 1))))
 ;------------------------------------------------------------------------------
 (defrule ConstructPathAggregateForRegion
          (declare (salience 100))
@@ -1809,8 +1997,8 @@
                  (Type Wavefront) 
                  (Parent ?r) 
                  (Contents $? ?e $?))
-         ?bb <- (object (is-a Region)
-                        (ID ?e)) 
+         (object (is-a Region)
+                 (ID ?e)) 
          =>
          (assert (Propagate aggregates of ?e))
          (make-instance of PathAggregate 
@@ -3065,7 +3253,7 @@
          (retract ?fct)
          (assert (Update style for ?e is ?lastPhi))
          (make-instance of Schedule 
-          (Parent ?e) 
+                        (Parent ?e) 
                         (Contents ?firstNonPhi ?instructions)))
 ;------------------------------------------------------------------------------
 (defrule ConstructScheduleObjectForBlock-DoesntHavePhis
@@ -3086,7 +3274,7 @@
          (retract ?fct)
          (assert (Update style for ?e is))
          (make-instance of Schedule 
-          (Parent ?e) 
+                        (Parent ?e) 
                         (Contents ?firstNonPhi ?instructions)))
 ;------------------------------------------------------------------------------
 (defrule ConstructScheduleObjectForBlock-TerminatorOnly
@@ -3838,17 +4026,17 @@
          (Substage DependencyAnalysis $?)
          (Evaluate ?p for dependencies starting at ?si)
          ?i0 <- (object (is-a Instruction) 
-             (Parent ?p)
+                        (Parent ?p)
                         (ID ?t0)
                         (Operands $? ?c $?) 
                         (TimeIndex ?ti0))
          (object (is-a TaggedObject&~ConstantInteger&~ConstantFloatingPoint) 
                  (ID ?c))
          ?i1 <- (object (is-a Instruction) 
-             (Parent ?p)
+                        (Parent ?p)
                         (ID ?t1)
                         (TimeIndex ?ti1&:(and (>= ?ti1 ?si) 
-                                          (< ?ti0 ?ti1)))
+                                              (< ?ti0 ?ti1)))
                         (DestinationRegisters $? ?c $?))
          =>
          (assert (Instruction ?t1 consumes ?t0)
@@ -3862,18 +4050,18 @@
          (Substage DependencyAnalysis $?)
          (Evaluate ?p for dependencies starting at ?si)
          (object (is-a Instruction) 
-          (Parent ?p)
+                 (Parent ?p)
                  (ID ?t0)
                  (DestinationRegisters $? ?c $?) 
                  (TimeIndex ?ti0))
          (object (is-a TaggedObject&~ConstantInteger&~ConstantFloatingPoint) 
                  (ID ?c))
          (object (is-a Instruction) 
-          (Parent ?p)
+                 (Parent ?p)
                  (ID ?t1)
                  (Operands $? ?c $?) 
                  (TimeIndex ?ti1&:(and (>= ?ti1 ?si) 
-                                   (< ?ti0 ?ti1))))
+                                       (< ?ti0 ?ti1))))
          =>
          (assert (Instruction ?t1 consumes ?t0)
                  (Instruction ?t0 produces ?t1)))
@@ -3922,7 +4110,7 @@
          (object (is-a Instruction) 
                  (Parent ?p) 
                  (TimeIndex ?ti1&:(and (>= ?ti1 ?si) 
-                                   (< ?t0 ?ti1)))
+                                       (< ?t0 ?ti1)))
                  (HasCallDependency FALSE)
                  (ID ?following))
          =>
@@ -4232,7 +4420,7 @@
          (if (member$ UNKNOWN 
                       (create$ ?rf ?wt)) then
            (modify-instance ?bb 
-                            (HasMemoryBarrier TRUE)))
+                            (HasMemoryBarrier TRUE))))
 ;------------------------------------------------------------------------------
 ; Now we need to rename operands as need be within the blocks that these
 ; instructions have been scheduled into
@@ -4345,9 +4533,9 @@
          =>
          (object-pattern-match-delay
            (retract ?fct)
-          (slot-insert-first$ ?inst
-                              LocalDependencies
-                              ?curr)
+           (slot-insert-first$ ?inst
+                               LocalDependencies
+                               ?curr)
            (assert ({ env: clips translation: ?from => ?to action: replacement in:
                       ?symbol type: local-dependencies contents: $?rest }))))
 ;------------------------------------------------------------------------------
@@ -4368,9 +4556,9 @@
          =>
          (object-pattern-match-delay
            (retract ?fct)
-          (slot-insert$ ?inst
-                        LocalDependencies
-                        ?to)
+           (slot-insert$ ?inst
+                         LocalDependencies
+                         ?to)
            (assert ({ env: clips translation: ?from => ?to action: replacement in:
                       ?symbol type: local-dependencies contents: $?rest }))))
 ;------------------------------------------------------------------------------
@@ -4588,88 +4776,88 @@
          ;TODO: add another rule where we have to update the consumers list as
          ;      well
          =>
-           (retract ?fct)
-           (object-pattern-match-delay
-             ;(printout t "Scheduled " ?inst " into " ?e crlf)
-             (modify-instance ?terminator 
-                              (TimeIndex (+ ?ti 1)))
-             ;(modify-instance ?newBlock (Produces ?nBProds ?register))
-             (modify-instance ?oldBlock 
-                              (Contents $?before 
-                                        $?rest) 
-                              (Produces $?pBefore 
-                                        $?pRest))
-             ;(modify-instance ?cpvObject (Paths))
-             (assert (Remove evidence of ?inst from instructions $?niConsumers)
-                     ;(send ?newInst get-Consumers))
-                     (Recompute block ?otherBlock))
-             (if (eq StoreInstruction ?class) then 
-               (modify-instance ?agObj 
-                                (ScheduledInstructions $?agSI 
-                                                       ?inst ?register)
-                                (ReplacementActions $?agRA 
-                                                    ?inst ?inst !))
-               ;(slot-insert$ ?agObj ScheduledInstructions 1 ?inst ?register)
-               (modify-instance ?newBlock 
-                                (Produces $?nBProds 
-                                          ?register)
-                                (Contents $?blockBefore 
-                                          ?inst ?last))
-               (modify-instance ?cpvObject 
-                                (Paths)
-                                (ScheduleTargets ?cpvST 
-                                                 ?e ?inst)
-                                (Aliases $?cpvAliases 
-                                         ?inst ?e))
-               (llvm-unlink-and-move-instruction-before ?nPtr 
-                                                        ?tPtr)
-               ;(slot-insert$ ?cpvObject ScheduleTargets 1 ?e ?inst)
-               ;(slot-insert$ ?cpvObject Aliases 1 ?inst ?e)
-               ;(slot-insert$ ?agObj ReplacementActions 1 ?inst ?inst !)
-               else
-               (bind ?newName (sym-cat movedinstruction. (gensym*) . ?inst))
-               (modify-instance ?cpvObject 
-                                (Paths)
-                                (ScheduleTargets ?cpvST 
-                                                 ?e 
-                                                 ?newName)
-                                (Aliases ?cpvAliases 
-                                         ?newName 
-                                         ?e))
-               ;(slot-insert$ ?cpvObject ScheduleTargets 1 ?e ?newName)
-               ;(slot-insert$ ?cpvObject Aliases 1 ?newName ?e)
-               ;(slot-insert$ ?agObj ReplacementActions 1 ?inst ?newName !)
-               (modify-instance ?newBlock 
-                                (Produces $?nBProds 
-                                          ?register)
-                                (Contents $?blockBefore 
-                                          ?newName 
-                                          ?last))
-               (bind ?newPtr (llvm-clone-instruction ?nPtr 
-                                                     ?newName))
-               ;purge the list of producers and consumers
-               (duplicate-instance ?inst to ?newName 
-                                   (ID ?newName) 
-                                   (Name ?newName)
-                                   (Pointer ?newPtr) 
-                                   (Producers) 
-                                   (Consumers)
-                                   (NonLocalDependencies) 
-                                   (LocalDependencies)
-                                   (TimeIndex ?ti) 
-                                   (Parent ?e))
-               (llvm-move-instruction-before ?newPtr 
-                                             ?tPtr)
-               (slot-insert-first$ ?oldBlock
-                                   UnlinkedInstructions
-                                   ?inst)
-               (modify-instance ?agObj 
-                                (ReplacementActions $?agRA 
-                                                    ?inst ?newName !)
-                                (InstructionPropagation $?agIP 
-                                                        ?inst ?newName ?e !)
-                                (ScheduledInstructions $?agSI 
-                                                       ?inst)))))
+         (retract ?fct)
+         (object-pattern-match-delay
+           ;(printout t "Scheduled " ?inst " into " ?e crlf)
+           (modify-instance ?terminator 
+                            (TimeIndex (+ ?ti 1)))
+           ;(modify-instance ?newBlock (Produces ?nBProds ?register))
+           (modify-instance ?oldBlock 
+                            (Contents $?before 
+                                      $?rest) 
+                            (Produces $?pBefore 
+                                      $?pRest))
+           ;(modify-instance ?cpvObject (Paths))
+           (assert (Remove evidence of ?inst from instructions $?niConsumers)
+                   ;(send ?newInst get-Consumers))
+                   (Recompute block ?otherBlock))
+           (if (eq StoreInstruction ?class) then 
+             (modify-instance ?agObj 
+                              (ScheduledInstructions $?agSI 
+                                                     ?inst ?register)
+                              (ReplacementActions $?agRA 
+                                                  ?inst ?inst !))
+             ;(slot-insert$ ?agObj ScheduledInstructions 1 ?inst ?register)
+             (modify-instance ?newBlock 
+                              (Produces $?nBProds 
+                                        ?register)
+                              (Contents $?blockBefore 
+                                        ?inst ?last))
+             (modify-instance ?cpvObject 
+                              (Paths)
+                              (ScheduleTargets ?cpvST 
+                                               ?e ?inst)
+                              (Aliases $?cpvAliases 
+                                       ?inst ?e))
+             (llvm-unlink-and-move-instruction-before ?nPtr 
+                                                      ?tPtr)
+             ;(slot-insert$ ?cpvObject ScheduleTargets 1 ?e ?inst)
+             ;(slot-insert$ ?cpvObject Aliases 1 ?inst ?e)
+             ;(slot-insert$ ?agObj ReplacementActions 1 ?inst ?inst !)
+             else
+             (bind ?newName (sym-cat movedinstruction. (gensym*) . ?inst))
+             (modify-instance ?cpvObject 
+                              (Paths)
+                              (ScheduleTargets ?cpvST 
+                                               ?e 
+                                               ?newName)
+                              (Aliases ?cpvAliases 
+                                       ?newName 
+                                       ?e))
+             ;(slot-insert$ ?cpvObject ScheduleTargets 1 ?e ?newName)
+             ;(slot-insert$ ?cpvObject Aliases 1 ?newName ?e)
+             ;(slot-insert$ ?agObj ReplacementActions 1 ?inst ?newName !)
+             (modify-instance ?newBlock 
+                              (Produces $?nBProds 
+                                        ?register)
+                              (Contents $?blockBefore 
+                                        ?newName 
+                                        ?last))
+             (bind ?newPtr (llvm-clone-instruction ?nPtr 
+                                                   ?newName))
+             ;purge the list of producers and consumers
+             (duplicate-instance ?inst to ?newName 
+                                 (ID ?newName) 
+                                 (Name ?newName)
+                                 (Pointer ?newPtr) 
+                                 (Producers) 
+                                 (Consumers)
+                                 (NonLocalDependencies) 
+                                 (LocalDependencies)
+                                 (TimeIndex ?ti) 
+                                 (Parent ?e))
+             (llvm-move-instruction-before ?newPtr 
+                                           ?tPtr)
+             (slot-insert-first$ ?oldBlock
+                                 UnlinkedInstructions
+                                 ?inst)
+             (modify-instance ?agObj 
+                              (ReplacementActions $?agRA 
+                                                  ?inst ?newName !)
+                              (InstructionPropagation $?agIP 
+                                                      ?inst ?newName ?e !)
+                              (ScheduledInstructions $?agSI 
+                                                     ?inst)))))
 ;(slot-insert$ ?agObj InstructionPropagation 1 ?inst ?newName ?e !)
 ;(slot-insert$ ?agObj ScheduledInstructions 1 ?inst))))
 ;------------------------------------------------------------------------------
