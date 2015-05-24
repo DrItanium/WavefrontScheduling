@@ -1805,12 +1805,16 @@
          (declare (salience 100))
          (Stage WavefrontSchedule $?)
          (Substage Init $?)
-         (object (is-a Hint) (Type Wavefront) (Parent ?r) (Contents $? ?e $?))
+         (object (is-a Hint) 
+                 (Type Wavefront) 
+                 (Parent ?r) 
+                 (Contents $? ?e $?))
          ?bb <- (object (is-a Region)
                         (ID ?e)) 
          =>
          (assert (Propagate aggregates of ?e))
-         (make-instance of PathAggregate (Parent ?e)))
+         (make-instance of PathAggregate 
+                        (Parent ?e)))
 ;------------------------------------------------------------------------------
 ; Rules to select valid basic blocks for wavefront scheduling within a given 
 ; region
@@ -1819,7 +1823,10 @@
          (declare (salience 100))
          (Stage WavefrontSchedule $?)
          (Substage Identify $?)
-         (object (is-a Hint) (Type Wavefront) (Parent ?r) (Contents $? ?e $?))
+         (object (is-a Hint) 
+                 (Type Wavefront) 
+                 (Parent ?r) 
+                 (Contents $? ?e $?))
          ;select only BasicBlocks
          (object (is-a BasicBlock)
                  (ID ?e))
@@ -1844,11 +1851,13 @@
          (Substage Identify $?)
          ?fct <- (Picked ?e for ?r)
          ?bb <- (object (is-a BasicBlock)
-                        (ID ?e) (Paths $?paths))
+                        (ID ?e) 
+                        (Paths $?paths))
          (test (not (send ?bb .IsSplitBlock)))
          =>
          (retract ?fct)
-         (modify-instance ?bb (IsOpen TRUE))
+         (modify-instance ?bb 
+                          (IsOpen TRUE))
          (assert (Build paths for ?e from $?paths)))
 ;------------------------------------------------------------------------------
 (defrule BuildUpPaths
@@ -1885,7 +1894,8 @@
          (Substage Pathing $?)
          ?fct <- (Check path ?p for block ?e)
          (object (is-a Path)
-                 (ID ?p) (Contents $? ?e $?rest))
+                 (ID ?p) 
+                 (Contents $? ?e $?rest))
          (object (is-a BasicBlock)
                  (ID ?e))
          =>
@@ -1976,8 +1986,8 @@
          (Stage WavefrontSchedule $?)
          (Substage Strip $?)
          ?pv0 <- (PotentiallyValid blocks for ?e are $?t)
-         ?pv1 <- (PotentiallyValid blocks for ?e are $?q)
-         (test (and (neq ?pv0 ?pv1) (subsetp ?t ?q)))
+         ?pv1 <- (PotentiallyValid blocks for ?e are $?q&:(subsetp ?t ?q))
+         (test (neq ?pv0 ?pv1))
          =>
          (retract ?pv0 ?pv1)
          ;make sure that we get matches again!
@@ -1987,8 +1997,8 @@
          (Stage WavefrontSchedule $?)
          (Substage Strip $?)
          ?pv0 <- (MemoryPotentiallyValid blocks for ?e are $?t)
-         ?pv1 <- (MemoryPotentiallyValid blocks for ?e are $?q)
-         (test (and (neq ?pv0 ?pv1) (subsetp ?t ?q)))
+         ?pv1 <- (MemoryPotentiallyValid blocks for ?e are $?q&:(subsetp ?t ?q))
+         (test (neq ?pv0 ?pv1))
          =>
          (retract ?pv0 ?pv1)
          ;make sure that we get matches again!
@@ -1999,8 +2009,8 @@
          (Stage WavefrontSchedule $?)
          (Substage Strip $?)
          ?pv0 <- (CompletelyInvalid blocks for ?e are $?t)
-         ?pv1 <- (CompletelyInvalid blocks for ?e are $?q)
-         (test (and (neq ?pv0 ?pv1) (subsetp ?t ?q)))
+         ?pv1 <- (CompletelyInvalid blocks for ?e are $?q&:(subsetp ?t ?q))
+         (test (neq ?pv0 ?pv1))
          =>
          (retract ?pv0 ?pv1)
          (assert (CompletelyInvalid blocks for ?e are $?q)))
@@ -2009,8 +2019,7 @@
          (Stage WavefrontSchedule $?)
          (Substage Strip $?)
          (CompletelyInvalid blocks for ?e are $?t)
-         ?pv1 <- (PotentiallyValid blocks for ?e are $?q)
-         (test (subsetp ?q ?t))
+         ?pv1 <- (PotentiallyValid blocks for ?e are $?q&:(subsetp ?q ?t))
          =>
          (retract ?pv1))
 ;------------------------------------------------------------------------------
@@ -2036,7 +2045,8 @@
          (Stage WavefrontSchedule $?)
          (Substage Inject $?)
          ?fct <- (PotentiallyValid blocks for ?e are $?blocks)
-         ?pa <- (object (is-a PathAggregate) (Parent ?e) 
+         ?pa <- (object (is-a PathAggregate) 
+                        (Parent ?e) 
                         (PotentiallyValid $?pv))
          =>
          (retract ?fct)
@@ -2046,13 +2056,15 @@
                  (if (not (member$ ?block ?pvs)) then 
                    (bind ?pvs (insert$ ?pvs ?newIndex ?block))
                    (bind ?newIndex (+ ?newIndex 1))))
-         (modify-instance ?pa (PotentiallyValid ?pvs)))
+         (modify-instance ?pa 
+                          (PotentiallyValid ?pvs)))
 ;------------------------------------------------------------------------------
 (defrule InjectCompletelyInvalidBlocks-Complete
          (Stage WavefrontSchedule $?)
          (Substage Inject $?)
          ?fct <- (CompletelyInvalid blocks for ?e are $?blocks)
-         ?pa <- (object (is-a PathAggregate) (Parent ?e) 
+         ?pa <- (object (is-a PathAggregate) 
+                        (Parent ?e) 
                         (CompletelyInvalid $?ci))
          =>
          (retract ?fct)
@@ -2062,7 +2074,8 @@
                  (if (not (member$ ?block ?cis)) then 
                    (bind ?cis (insert$ ?cis ?newIndex ?block))
                    (bind ?newIndex (+ 1 ?newIndex))))
-         (modify-instance ?pa (CompletelyInvalid ?cis)))
+         (modify-instance ?pa 
+                          (CompletelyInvalid ?cis)))
 ;------------------------------------------------------------------------------
 (defrule InterleavedInjectCompletelyInvalid-AndPotentiallyInvalidBlocks
          (declare (salience 1))
@@ -2070,7 +2083,8 @@
          (Substage Inject $?)
          ?f0 <- (CompletelyInvalid blocks for ?e are $?b0)
          ?f1 <- (PotentiallyValid blocks for ?e are $?b1)
-         ?pa <- (object (is-a PathAggregate) (Parent ?e)
+         ?pa <- (object (is-a PathAggregate) 
+                        (Parent ?e)
                         (CompletelyInvalid $?ci)
                         (PotentiallyValid $?pv))
          =>
@@ -2087,7 +2101,8 @@
                  (if (not (member$ ?b ?pvs)) then
                    (bind ?pvs (insert$ ?pvs ?i1 ?b))
                    (bind ?i1 (+ ?i1 1))))
-         (modify-instance ?pa (CompletelyInvalid ?cis) 
+         (modify-instance ?pa 
+                          (CompletelyInvalid ?cis) 
                           (PotentiallyValid ?pvs)))
 ;------------------------------------------------------------------------------
 (defrule InjectMemoryBarrierBlocks 
@@ -2095,22 +2110,30 @@
          (Substage Inject $?)
          ;get the Mrs. Hitler birth certificate
          ?fct <- (Element ?t has a MemoryBarrier for ?e)
-         ?pa <- (object (is-a PathAggregate) (Parent ?e))
+         ?pa <- (object (is-a PathAggregate) 
+                        (Parent ?e))
          =>
          (retract ?fct)
-         (if (not (member$ ?t (send ?pa get-MemoryBarriers))) then
-           (slot-insert$ ?pa MemoryBarriers 1 ?t)))
+         (if (not (member$ ?t 
+                           (send ?pa get-MemoryBarriers))) then
+           (slot-insert-first$ ?pa 
+                               MemoryBarriers
+                               ?t)))
 ;------------------------------------------------------------------------------
 (defrule InjectCallBarrierBlocks 
          (Stage WavefrontSchedule $?)
          (Substage Inject $?)
          ;get the Mrs. Hitler birth certificate
          ?fct <- (Element ?t has a CallBarrier for ?e)
-         ?pa <- (object (is-a PathAggregate) (Parent ?e))
+         ?pa <- (object (is-a PathAggregate) 
+                        (Parent ?e))
          =>
          (retract ?fct)
-         (if (not (member$ ?t (send ?pa get-CallBarriers))) then
-           (slot-insert$ ?pa CallBarriers 1 ?t)))
+         (if (not (member$ ?t 
+                           (send ?pa get-CallBarriers))) then
+           (slot-insert-first$ ?pa
+                               CallBarrier
+                               ?t)))
 ;------------------------------------------------------------------------------
 ; now that we have a path aggregate we need to get the list of instruction
 ; CPV's that represent valid movable instructions for the given block on the
@@ -2119,12 +2142,15 @@
 (defrule SelectValidCPVs 
          (Stage WavefrontSchedule $?)
          (Substage Acquire $?)
-         (object (is-a Wavefront) (Parent ?r) (Contents $? ?e $?))
+         (object (is-a Wavefront) 
+                 (Parent ?r) 
+                 (Contents $? ?e $?))
          (object (is-a BasicBlock)
-                 (ID ?e) (IsOpen TRUE))
-         ?pa <- (object (is-a PathAggregate)
-                        (ID ?ag) (Parent ?e)
-                        (PotentiallyValid $?pv))
+                 (ID ?e) 
+                 (IsOpen TRUE))
+         (object (is-a PathAggregate)
+                 (Parent ?e)
+                 (PotentiallyValid $?pv))
          =>
          (assert (For ?e find CPVs for $?pv)))
 ;------------------------------------------------------------------------------
@@ -2133,7 +2159,8 @@
          (Substage Acquire $?)
          ?fct <- (For ?e find CPVs for ?pv $?pvs)
          (object (is-a BasicBlock)
-                 (ID ?pv) (Contents $?instructions))
+                 (ID ?pv) 
+                 (Contents $?instructions))
          =>
          (retract ?fct)
          (assert (For ?e find CPVs for $?pvs)
@@ -2196,10 +2223,12 @@
          ?fct <- (Get CPVs out of ?pv for ?e using ?inst $?insts)
          ;make sure that the parent block is the same
          (object (is-a Instruction)
-                 (ID ?inst) (Parent ?p) 
+                 (ID ?inst) 
+                 (Parent ?p) 
                  (DestinationRegisters $? ?reg $?))
          (object (is-a PhiNode)
-                 (ID ?reg) (Parent ?p))
+                 (ID ?reg) 
+                 (Parent ?p))
          =>
          (retract ?fct)
          (assert (Get CPVs out of ?pv for ?e using $?insts)))
@@ -2211,7 +2240,8 @@
          ?fct <- (Get CPVs out of ?pv for ?e using ?inst $?insts)
          ;make sure that the parent block is the same 
          (object (is-a Instruction)
-                 (ID ?inst) (LocalDependencies $? ?reg $?))
+                 (ID ?inst) 
+                 (LocalDependencies $? ?reg $?))
          (object (is-a PhiNode)
                  (ID ?reg))
          =>
@@ -2222,9 +2252,10 @@
          (Stage WavefrontSchedule $?)
          (Substage Acquire $?)
          ?fct <- (Get CPVs out of ?pv for ?e using ?inst $?insts)
-         ?i <- (object (is-a Instruction)
-                       (ID ?inst) (IsTerminator FALSE) 
-                       (HasCallDependency FALSE))
+         (object (is-a Instruction)
+                 (ID ?inst) 
+                 (IsTerminator FALSE) 
+                 (HasCallDependency FALSE))
          =>
          (retract ?fct)
          (assert (Get CPVs out of ?pv for ?e using $?insts)
@@ -2233,23 +2264,27 @@
 (defrule RetractDrainedGetCPVFacts
          (Stage WavefrontSchedule $?)
          (Substage Acquire $?)
-         ?fct <- (Get CPVs out of ?pv for ?e using)
+         ?fct <- (Get CPVs out of ? for ? using)
          =>
          (retract ?fct))
 ;------------------------------------------------------------------------------
+; TODO: fix this
 (defrule ReloadCPVIntoNewAggregate
          "Put the CPV that has already been created into the target path 
          aggregate"
          (Stage WavefrontSchedule $?)
          (Substage Acquire $?)
          ?fct <- (Marked ?inst as valid for block ?e)
-         (object (is-a CompensationPathVector) (Parent ?inst)
+         (object (is-a CompensationPathVector) 
+                 (Parent ?inst)
                  (ID ?cpvID))
          ?agObj <- (object (is-a PathAggregate)
-                           (ID ?ag) (Parent ?e))
+                           (ID ?ag) 
+                           (Parent ?e))
          (object (is-a Instruction)
-                 (ID ?inst) (NonLocalDependencies $?nlds)
-                 (DestinationRegisters ?reg) (Class ?class))
+                 (ID ?inst) 
+                 (NonLocalDependencies $?nlds)
+                 (DestinationRegisters ?reg))
          (test (not (member$ ?cpvID 
                              (send ?agObj 
                                    get-ImpossibleCompensationPathVectors))))
@@ -2270,51 +2305,72 @@
          (Stage WavefrontSchedule $?)
          (Substage Acquire $?)
          ?fct <- (Marked ?inst as valid for block ?e)
-         (object (is-a CompensationPathVector) (Parent ?inst)
+         (object (is-a CompensationPathVector) 
+                 (Parent ?inst)
                  (ID ?cpvID))
          ?agObj <- (object (is-a PathAggregate)
-                           (ID ?ag) (Parent ?e))
+                           (Parent ?e)
+                           (ImpossibleCompensationPathVectors $? ?cpvID $?)
+                           (ScheduledInstructions $?si))
          (object (is-a Instruction)
-                 (ID ?inst) (NonLocalDependencies $?nlds)
-                 (DestinationRegisters ?reg) (Class ?class))
-         (test (member$ ?cpvID (send ?agObj 
-                                     get-ImpossibleCompensationPathVectors)))
+                 (ID ?inst) 
+                 (NonLocalDependencies $?nlds))
          =>
          ;add the non-local dependencies
          (progn$ (?nld ?nlds)
-                 (if (not (member$ ?nld (send ?agObj 
-                                              get-ScheduledInstructions))) then
-                   (slot-insert$ ?agObj ScheduledInstructions 1 ?nld)))
+                 (if (not (member$ ?nld ?si)) then
+                   (slot-insert-first$ ?agObj
+                                       ScheduledInstructions
+                                       ?nld)))
          (retract ?fct))
 ;------------------------------------------------------------------------------
 (defrule MakeCPV 
          (Stage WavefrontSchedule $?)
          (Substage Acquire $?)
          ?fct <- (Marked ?inst as valid for block ?e)
-         (not (exists (object (is-a CompensationPathVector) (Parent ?inst))))
-         (object (is-a Instruction) (Class ?class)
-                 (ID ?inst) (Parent ?pv) 
-                 (DestinationRegisters ?reg) (NonLocalDependencies $?nlds))
+         (not (exists (object (is-a CompensationPathVector) 
+                              (Parent ?inst))))
+         (object (is-a Instruction) 
+                 (ID ?inst) 
+                 (Parent ?pv) 
+                 (DestinationRegisters ?reg) 
+                 (NonLocalDependencies $?nlds))
          (object (is-a BasicBlock)
-                 (ID ?pv) (Paths $?paths))
+                 (ID ?pv) 
+                 (Paths $?paths))
          ?pa <- (object (is-a PathAggregate)
-                        (ID ?ag) (Parent ?e))
+                        (ID ?ag) 
+                        (Parent ?e))
          =>
          ; We need to disable the stores from moving when their dependencies
          ; 
          ; YOU DON'T EVEN WANT TO KNOW WHAT I'M GOING TO DO TO YOU
          (retract ?fct)
          (bind ?name (gensym*))
-         (slot-insert$ ?pa CompensationPathVectors 1 ?name)
-         (make-instance ?name of CompensationPathVector (Parent ?inst) 
-                        (Paths $?paths) (OriginalBlock ?pv))
-         (if (not (member$ ?inst (send ?pa get-InstructionList))) then 
-           (slot-insert$ ?pa InstructionList 1 ?inst))
-         (if (not (member$ ?reg (send ?pa get-InstructionList))) then
-           (slot-insert$ ?pa InstructionList 1 ?reg))
+         (slot-insert-first ?pa
+                            CompensationPathVectors
+                            ?name)
+         (make-instance ?name of CompensationPathVector 
+                        (Parent ?inst) 
+                        (Paths $?paths) 
+                        (OriginalBlock ?pv))
+         (if (not (member$ ?inst 
+                           (send ?pa get-InstructionList))) then 
+           (slot-insert-first$ ?pa
+                               InstructionList
+                               ?inst))
+         (if (not (member$ ?reg 
+                           (send ?pa get-InstructionList))) then
+           (slot-insert-first$ ?pa
+                               InstructionList
+                               ?reg))
          (progn$ (?nld ?nlds)
-                 (if (not (member$ ?nld (send ?pa get-ScheduledInstructions))) 
-                   then (slot-insert$ ?pa ScheduledInstructions 1 ?nld))))
+                 (if (not (member$ ?nld 
+                                   (send ?pa get-ScheduledInstructions))) 
+                   then
+                   (slot-insert-first$ ?pa
+                                       ScheduledInstructions
+                                       ?nld))))
 ;------------------------------------------------------------------------------
 ; Now we go through and attempt to schedule the instruction represented by 
 ; each CPV into the block on the wavefront. I call this stage merge. I had some
@@ -2327,19 +2383,24 @@
 (defrule SetifyInstructionList
          (Stage WavefrontSchedule $?)
          (Substage Slice $?)
-         ?pa <- (object (is-a PathAggregate) (InstructionList $?a ?b $?c ?b $?d))
+         ?pa <- (object (is-a PathAggregate) 
+                        (InstructionList $?a ?b $?c ?b $?d))
          =>
-         (modify-instance ?pa (InstructionList $?a ?b $?c $?d)))
+         (modify-instance ?pa 
+                          (InstructionList $?a ?b $?c $?d)))
 ;------------------------------------------------------------------------------
 (defrule GenerateInitialSliceFactsForElementsOnTheWavefront 
          (Stage WavefrontSchedule $?)
          (Substage Slice $?)
-         (object (is-a Wavefront) (Parent ?r) (Contents $? ?e $?))
+         (object (is-a Wavefront) 
+                 (Parent ?r) 
+                 (Contents $? ?e $?))
          (object (is-a BasicBlock)
-                 (ID ?e) (IsOpen TRUE))
-         (object (is-a PathAggregate) (Parent ?e) 
-                 (CompensationPathVectors $?cpv))
-         (test (> (length$ ?cpv) 0))
+                 (ID ?e) 
+                 (IsOpen TRUE))
+         (object (is-a PathAggregate) 
+                 (Parent ?e) 
+                 (CompensationPathVectors $?cpv&:(not (empty$ ?cpv))))
          =>
          (assert (Generate slices for block ?e in ?r using $?cpv)))
 ;------------------------------------------------------------------------------
@@ -2371,7 +2432,8 @@
          ?fct <- (Generate slices for block ?e in ?r with cpv ?cpv with stop 
                            block ?b using paths ?path $?paths)
          (object (is-a Path)
-                 (ID ?path) (Contents $? ?e $?))
+                 (ID ?path) 
+                 (Contents $? ?e $?))
          ;(test (member$ ?e ?z))
          =>
          (retract ?fct)
@@ -2386,8 +2448,8 @@
          ?fct <- (Generate slices for block ?e in ?r with cpv ?cpv with stop 
                            block ?b using paths ?path $?paths)
          (object (is-a Path)
-                 (ID ?path) (Contents $?z))
-         (test (not (member$ ?e ?z)))
+                 (ID ?path) 
+                 (Contents $?z&:(not (member$ ?e ?z))))
          =>
          (retract ?fct)
          (assert (Generate slices for block ?e in ?r with cpv ?cpv with stop 
@@ -2398,21 +2460,29 @@
          (Substage Slice $?)
          ?fct <- (Generate slice for block ?e in ?r with cpv ?cpv with stop 
                            block ?b using path ?path)
-         (not (exists (object (is-a Slice) (Parent ?b) (TargetPath ?path) 
+         (not (exists (object (is-a Slice) 
+                              (Parent ?b) 
+                              (TargetPath ?path) 
                               (TargetBlock ?e))))
          (object (is-a Path)
-                 (ID ?path) (Contents $? ?e $?slice ?b $?))
+                 (ID ?path) 
+                 (Contents $? ?e $?slice ?b $?))
          =>
          (retract ?fct)
-         (make-instance (gensym*) of Slice (Parent ?b) (TargetPath ?path)
-                        (TargetBlock ?e) (Contents $?slice)))
+         (make-instance of Slice 
+                        (Parent ?b) 
+                        (TargetPath ?path)
+                        (TargetBlock ?e) 
+                        (Contents $?slice)))
 ;------------------------------------------------------------------------------
 (defrule SliceAlreadyExists
          (Stage WavefrontSchedule $?)
          (Substage Slice $?)
-         ?fct <- (Generate slice for block ?e in ?r with cpv ?cpv with stop 
+         ?fct <- (Generate slice for block ?e in ? with cpv ? with stop 
                            block ?b using path ?path)
-         (exists (object (is-a Slice) (Parent ?b) (TargetPath ?path) 
+         (exists (object (is-a Slice) 
+                         (Parent ?b)
+                         (TargetPath ?path) 
                          (TargetBlock ?e)))
          =>
          (retract ?fct))
