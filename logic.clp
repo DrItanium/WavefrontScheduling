@@ -3445,8 +3445,8 @@
 		 (object (is-a LoadInstruction) (Parent ?p) (ID ?t1) 
 				 (TimeIndex ?ti1&:(and (>= ?ti1 ?si) (< ?ti0 ?ti1)))
 				 (MemoryTarget ?sym1))
-		 (test (or-eq ?sym0 ?sym1 UNKNOWN))
-		 ;(test (or (eq ?sym0 ?sym1) (eq ?sym0 UNKNOWN)))
+		 ;(test (or-eq ?sym0 ?sym1 UNKNOWN))
+		 (test (or (eq ?sym0 ?sym1) (eq ?sym0 UNKNOWN)))
 		 =>
 		 (assert (Instruction ?t1 consumes ?t0)
 				 (Instruction ?t0 produces ?t1)))
@@ -3460,8 +3460,8 @@
 		 (object (is-a StoreInstruction) (Parent ?p) (ID ?t1) 
 				 (TimeIndex ?ti1&:(and (>= ?ti1 ?si) (< ?ti0 ?ti1)))
 				 (MemoryTarget ?sym1))
-		 (test (or-eq ?sym0 ?sym1 UNKNOWN))
-		 ;(test (or (eq ?sym0 ?sym1) (eq ?sym0 UNKNOWN)))
+		 ;(test (or-eq ?sym0 ?sym1 UNKNOWN))
+		 (test (or (eq ?sym0 ?sym1) (eq ?sym0 UNKNOWN)))
 		 =>
 		 (assert (Instruction ?t1 consumes ?t0)
 				 (Instruction ?t0 produces ?t1)))
@@ -3475,8 +3475,8 @@
 		 (object (is-a StoreInstruction) (Parent ?p) (ID ?t1) 
 				 (TimeIndex ?ti1&:(and (>= ?ti1 ?si) (< ?ti0 ?ti1)))
 				 (MemoryTarget ?sym1))
-		 (test (or-eq ?sym0 ?sym1 UNKNOWN))
-		 ;(test (or (eq ?sym0 ?sym1) (eq ?sym0 UNKNOWN)))
+		 ;(test (or-eq ?sym0 ?sym1 UNKNOWN))
+		 (test (or (eq ?sym0 ?sym1) (eq ?sym0 UNKNOWN)))
 		 =>
 		 (assert (Instruction ?t1 consumes ?t0)
 				 (Instruction ?t0 produces ?t1)))
