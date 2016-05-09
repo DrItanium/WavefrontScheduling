@@ -345,141 +345,189 @@
 ;------------------------------------------------------------------------------
 ; Rules for determining ownership of blocks, regions, etc
 ;------------------------------------------------------------------------------
-(defrule ConstructDeterminantForRegionOrBasicBlock
-         (Stage DeterminantConstruction $?)
-         (object (is-a Region|BasicBlock) 
-                 (name ?r))
-         (not (exists (object (is-a OwnershipDeterminant) 
-                              (Parent ?r))))
-         =>
-         (make-instance of OwnershipDeterminant 
-                        (Parent ?r)))
+;(defrule ConstructDeterminantForRegionOrBasicBlock
+;         (Stage DeterminantConstruction $?)
+;         (object (is-a Region|BasicBlock) 
+;                 (name ?r))
+;         (not (exists (object (is-a OwnershipDeterminant) 
+;                              (Parent ?r))))
+;         =>
+;         (make-instance of OwnershipDeterminant 
+;                        (Parent ?r)))
 ;------------------------------------------------------------------------------
-(defmessage-handler OwnershipDeterminant add-to-potential-children primary
-                    (?element)
-                    (slot-direct-insert$ PotentialChildren
-                                         1
-                                         ?element))
-(defmessage-handler OwnershipDeterminant add-to-claims primary
-                    (?element)
-                    (slot-direct-insert$ Claims
-                                         1 
-                                         ?element))
-(defrule PopulateDeterminant
+;(defmessage-handler OwnershipDeterminant add-to-potential-children primary
+;                    (?element)
+;                    (slot-direct-insert$ PotentialChildren
+;                                         1
+;                                         ?element))
+;(defmessage-handler OwnershipDeterminant add-to-claims primary
+;                    (?element)
+;                    (slot-direct-insert$ Claims
+;                                         1 
+;                                         ?element))
+;(defrule PopulateDeterminant
+;         (Stage DeterminantPopulation $?)
+;         ?fct <- (claim ?a owns ?b)
+;         (object (is-a OwnershipDeterminant) 
+;                 (Parent ?b)
+;                 (name ?obj))
+;         (object (is-a OwnershipDeterminant) 
+;                 (Parent ?a)
+;                 (name ?obj2))
+;         =>
+;         (retract ?fct)
+;         (send ?obj2 add-to-potential-children ?b)
+;         (assert (item ?a claims ?b)))
+(deftemplate ownership-claim
+ (slot type
+  (type SYMBOL)
+  (allowed-symbols direct
+   indirect))
+ (slot owner
+  (type INSTANCE)
+  (default ?NONE))
+ (slot target
+  (type INSTANCE)
+  (default ?NONE)))
+
+(defrule ModifyClaim
          (Stage DeterminantPopulation $?)
-         ?fct <- (claim ?a owns ?b)
-         (object (is-a OwnershipDeterminant) 
-                 (Parent ?b)
-                 (name ?obj))
-         (object (is-a OwnershipDeterminant) 
-                 (Parent ?a)
-                 (name ?obj2))
+         ?f <- (claim ?a owns ?b)
          =>
-         (retract ?fct)
-         (send ?obj2 add-to-potential-children ?b)
-         (send ?obj add-to-claims ?a))
+         (retract ?f)
+         (assert (ownership-claim (owner ?a)
+                                  (target ?b))))
+
+
 ;------------------------------------------------------------------------------
 (defrule DetermineIndirectClaim
          (Stage DeterminantResolution $?)
-         (object (is-a OwnershipDeterminant) 
-                 (Parent ?b) 
-                 (Claims $?b0 ?a $?a0)
-                 (IndirectClaims $?ic)
-                 (name ?o0))
-         (object (is-a OwnershipDeterminant) 
-                 (Parent ~?b) 
-                 (PotentialChildren $? ?b $?) 
-                 (Claims $? ?a $?))
-         (object (is-a OwnershipDeterminant) 
-                 (Parent ?a) 
-                 (PotentialChildren $?b1 ?b $?a1)
-                 (name ?o1))
+         ?f <- (ownership-claim (owner ?high)
+                                (target ?low)
+                                (type direct))
+         (ownership-claim (owner ?mid)
+                          (target ?low)
+                          (type direct))
+         (ownership-claim (owner ?high)
+                          (target ?mid)
+                          (type direct))
          =>
-         ;let's see if this is faster
-         (object-pattern-match-delay 
-           (modify-instance ?o0
-                            (IndirectClaims ?ic
-                                            ?a)
-                            (Claims ?b0 
-                                    ?a0))
-           (modify-instance ?o1 
-                            (PotentialChildren ?b1 
-                                               ?a1))))
+         (modify ?f 
+                 (type indirect)))
+
 ;------------------------------------------------------------------------------
 (defrule DetermineIndirectIndirectClaim
          (Stage DeterminantIndirectResolution $?)
-         ?t0 <- (object (is-a OwnershipDeterminant) 
-                        (Parent ?b) 
-                        (Claims $?l ?a $?x) 
-                        (IndirectClaims $?ic))
-         (object (is-a OwnershipDeterminant) (Parent ~?b&~?a) 
-                 (IndirectClaims $? ?a $?) (PotentialChildren $? ?b $?))
-         ?t1 <- (object (is-a OwnershipDeterminant) (Parent ?a)
-                        (PotentialChildren $?z ?b $?q))
+         ?f <- (ownership-claim (owner ?high)
+                                (target ?low)
+                                (type direct))
+         (ownership-claim (owner ?mid)
+                          (target ?low)
+                          (type direct))
+         (ownership-claim (owner ?high)
+                          (target ?mid)
+                          (type indirect))
          =>
-         (object-pattern-match-delay 
-           (modify-instance ?t0 (IndirectClaims ?ic ?a) (Claims ?l ?x))
-           (modify-instance ?t1 (PotentialChildren ?z ?q))))
+         (modify ?f (type indirect)))
+
 ;------------------------------------------------------------------------------
 (defrule DeleteNonExistentReferences
          (Stage Fixup $?)
-         ?region <- (object (is-a Region) (Contents $? ?b $?))
+         (object (is-a Region) 
+                 (name ?region)
+                 (Contents $?ind ?b $?))
          (not (exists (object (name ?b))))
          =>
-         (object-pattern-match-delay 
-           (bind ?ind0 (member$ ?b (send ?region get-Contents)))
-           (slot-delete$ ?region Contents ?ind0 ?ind0)))
+         (slot-delete$ ?region
+                       Contents
+                       (bind ?ind0
+                             (+ (length$ ?ind) 1))
+                       ?ind0))
 ;------------------------------------------------------------------------------
-(defrule UpdateOwnerOfTargetRegion
+(defrule UpdateWithClaim
          (Stage FixupUpdate $?)
-         (object (is-a OwnershipDeterminant) (Parent ?p) (Claims ?a))
-         ?obj <- (object (is-a Region) (name ?p))
+         ?f <- (ownership-claim (type direct)
+                                (owner ?p)
+                                (target ?a))
          =>
-         (modify-instance ?obj (Parent ?a)))
+         (retract ?f)
+         (send ?a put-Parent ?p)
+         (slot-insert$ ?p
+          Contents
+          1 
+          ?a))
 ;------------------------------------------------------------------------------
-(defrule UpdateOwnerOfTargetBasicBlock
-         (Stage FixupUpdate $?)
-         (object (is-a OwnershipDeterminant) (Parent ?p) 
-                 (Claims ?a))
-         ?obj <- (object (is-a BasicBlock) (name ?p))
-         =>
-         (modify-instance ?obj (Parent ?a)))
-;------------------------------------------------------------------------------
-(defrule AddNewChildToTargetRegion
-         (Stage FixupUpdate $?)
-         (object (is-a OwnershipDeterminant) (Parent ?p)
-                 (PotentialChildren $? ?a $?))
-         ?region <- (object (is-a Region) (name ?p) (Contents $?c))
-         (test (not (member$ ?a ?c)))
-         =>
-         (slot-insert$ ?region Contents 1 ?a))
-;------------------------------------------------------------------------------
-(defrule CleanupOwnershipDeterminants
-         "Deletes all of the OwnershipDeterminant objects in a single rule 
-         fire"
-         (Stage CleanUp-Merger $?)
-         =>
-         (progn$ (?obj (find-all-instances ((?list OwnershipDeterminant)) 
-                                           TRUE))
-                 (unmake-instance ?obj)))
+;(defrule UpdateOwnerOfTargetBasicBlock
+;         (Stage FixupUpdate $?)
+;         (ownership-claim (type direct)
+;                          (
+;         (object (is-a OwnershipDeterminant) 
+;                 (Parent ?p) 
+;                 (Claims ?a))
+;         ?obj <- (object (is-a BasicBlock) (name ?p))
+;         =>
+;         (modify-instance ?obj (Parent ?a)))
+;;------------------------------------------------------------------------------
+;(defrule AddNewChildToTargetRegion
+;         (Stage FixupUpdate $?)
+;         ?f <- (ownership-claim (type direct)
+;                                (owner ?p)
+;                                (target ?a))
+;         (object (is-a Region)
+;                 (name ?p)
+;                 (Contents $?c&:(not (member$ ?a ?c))))
+;         =>
+;         (retract ?f)
+;         (slot-insert$ ?region 
+;                       Contents 1
+;                       ?a))
+;
+;;------------------------------------------------------------------------------
+;(defrule CleanupOwnershipDeterminants
+;         "Deletes all of the OwnershipDeterminant objects in a single rule 
+;         fire"
+;         (Stage CleanUp-Merger $?)
+;         =>
+;         (progn$ (?obj (find-all-instances ((?list OwnershipDeterminant)) 
+;                                           TRUE))
+;                 (unmake-instance ?obj)))
 ;------------------------------------------------------------------------------
 (defrule RemoveUnownedElements
          "Now that we have figured out and updated ownership claims it is 
          necessary to remove leftover entries in other regions"
          (Stage FixupRename $?)
-         ?r <- (object (is-a Region) (name ?t) (Contents $?a ?b $?c))
-         (object (is-a thing) (name ?b) (Parent ~?t))
+         (object (is-a Region) 
+                 (name ?t) 
+                 (Contents $?a ?b $?c))
+         (object (is-a thing) 
+                 (name ?b) 
+                 (Parent ~?t))
          =>
-         (modify-instance ?r (Contents $?a $?c)))
+         (modify-instance ?t 
+                          (Contents $?a $?c)))
 ;------------------------------------------------------------------------------
 (defrule FAILURE-TooManyClaimsOfOwnership
          (Stage Fixup $?)
-         (object (is-a OwnershipDeterminant) (Parent ?a) 
-                 (Claims $?z&:(> (length$ ?z) 1))
-                 (name ?name))
+         ?f0 <- (ownership-claim (owner ?a)
+                                 (target ?name)
+                                 (type direct))
+         ?f1 <- (ownership-claim (owner ~?a)
+                                 (target ?name)
+                                 (type direct))
+         (test (neq ?f0 
+                    ?f1))
          =>
-         (printout t "ERROR: " ?name " has more than one claim of ownership on"
-                   " it!" crlf "The claims are " ?z crlf)
+         (bind ?output
+               (create$))
+         (do-for-all-facts ((?o ownership-claim))
+                           (eq ?o:target 
+                               ?name)
+                           (bind ?output
+                                 ?output
+                                 ?o:owner))
+         (printout t 
+                   "ERROR: " ?name " has more than one claim of ownership on"
+                   " it!" crlf "The claims are " ?output crlf)
          (halt))
 ;------------------------------------------------------------------------------
 (defrule FAILURE-NoRemainingClaimsForRegion
