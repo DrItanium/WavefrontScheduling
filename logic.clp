@@ -291,53 +291,26 @@
 ;------------------------------------------------------------------------------
 (defrule PropagateBlockProducers
          (Stage ModificationPropagation $?)
-         (object (is-a BasicBlock) 
-                 (name ?b) 
-                 (Parent ?r) 
-                 (Produces $?produces))
+         (object (is-a BasicBlock)
+                 (Parent ?r)
+                 (Produces ?p))
          =>
-         (send ?r 
-               set-Produces-and-propagate-up 
-               ?produces))
+         (send ?r set-Produces-and-propagate-up ?p))
 ;------------------------------------------------------------------------------
 (defmessage-handler Region set-Produces-and-propagate-up primary
                     "Insert the provided set of elements into the Produces multislot and then send that data up to the target's parent" 
-                    ($?elements)
+                    (?elements)
                     (slot-direct-insert$ Produces
                                          1
                                          ?elements)
-                    (if (and (instance-existp ?self:Parent)
-                             (or (eq (class ?self:Parent)
-                                     Region)
-                                 (superclassp Region
-                                              (class ?self:Parent)))) then
-                      (send ?self:Parent 
+                    (if (instance-existp ?self:Parent) then
+                      (send ?self:Parent
                             set-Produces-and-propagate-up 
                             ?elements)))
-;(defrule PropagateRegionProducers-ParentExists
-;         (Stage ModificationPropagation $?)
-;         ?fct <- (Give ?r from ? the following produced items $?produced)
-;         ?region <- (object (is-a Region) 
-;                            (name ?r) 
-;                            (Parent ?p))
-;         (object (is-a Region)
-;                 (name ?p))
-;         =>
-;         (retract ?fct)
-;         (assert (Give ?p from ?r the following produced items $?produced))
-;         (slot-insert$ ?region Produces 1 ?produced))
-;------------------------------------------------------------------------------
-;(defrule PropagateRegionProducers-ParentDoesntExist
-;         (Stage ModificationPropagation $?)
-;         ?fct <- (Give ?r from ? the following produced items $?produced)
-;         ?region <- (object (is-a Region) 
-;                            (name ?r) 
-;                            (Parent ?p))
-;         (not (exists (object (is-a Region) 
-;                              (name ?p))))
-;         =>
-;         (retract ?fct)
-;         (slot-insert$ ?region Produces 1 ?produced))
+
+(defmessage-handler thing set-Produces-and-propagate-up primary
+                    (?elements)
+                    FALSE)
 ;------------------------------------------------------------------------------
 (defmessage-handler Instruction inject-producers-and-non-local-deps primary
                     (?op)

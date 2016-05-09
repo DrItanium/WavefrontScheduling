@@ -109,10 +109,14 @@
              (visibility public))
   (multislot NextPathElements 
              (visibility public))
-  (multislot Consumes)
-  (multislot Produces)
-  (multislot Paths (visibility public))
+  (multislot Consumes
+             (visibility public))
+  (multislot Produces
+             (visibility public))
+  (multislot Paths 
+             (visibility public))
   (message-handler init after))
+
 (defmessage-handler Diplomat init after
                     ()
                     (bind ?output
@@ -147,7 +151,7 @@
         (default-dynamic 0))
   (multislot Contents 
              (visibility public)))
-    
+
 
 ;------------------------------------------------------------------------------
 (defclass LLVMType (is-a LLVMObject)
@@ -592,9 +596,9 @@
                     (bind ?self:Type Wavefront))
 ;------------------------------------------------------------------------------
 (defclass MultiBlockContainer 
- (is-a Diplomat 
-       List 
-       InteropObject)
+  (is-a Diplomat 
+        List 
+        InteropObject)
   (multislot Entrances (visibility public))
   (multislot Exits (visibility public))
   (multislot SafePaths (visibility public))
@@ -622,21 +626,22 @@
 (defmessage-handler MultiBlockContainer .AddSplit (?BLK)
                     (bind ?self:Splits (create$ ?self:Splits ?BLK)))
 ;------------------------------------------------------------------------------
-(defclass Region (is-a MultiBlockContainer)
+(defclass Region 
+  (is-a MultiBlockContainer)
   (slot CanWavefrontSchedule 
-   (type SYMBOL) 
-   (allowed-values FALSE TRUE))
+        (type SYMBOL) 
+        (allowed-values FALSE TRUE))
   (slot IsSimple 
-   (type SYMBOL) 
-   (allowed-values FALSE TRUE))
+        (type SYMBOL) 
+        (allowed-values FALSE TRUE))
   (slot Depth 
-   (type NUMBER) 
-   (range 0 ?VARIABLE))
+        (type NUMBER) 
+        (range 0 ?VARIABLE))
   (slot IsTopLevelRegion 
-   (type SYMBOL) 
-   (allowed-values FALSE TRUE))
+        (type SYMBOL) 
+        (allowed-values FALSE TRUE))
 
-   (message-handler init after))
+  (message-handler init after))
 (defmessage-handler Region init after
                     ()
                     (bind ?output
