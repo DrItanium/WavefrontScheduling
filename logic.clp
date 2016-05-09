@@ -128,10 +128,13 @@
 		 "Takes a flat list and expands one of the elements of the contents if 
 		 it turns out that element is another flat list"
 		 (Stage ExpandFlatList $?)
-		 ?id <- (object (is-a FlatList) (Contents $?a ?b $?c))
-		 (object (is-a FlatList) (ID ?b) (Contents $?j))
+		 ?id <- (object (is-a FlatList) 
+                        (Contents $?a ?b $?c))
+		 (object (is-a FlatList) 
+                 (ID ?b) 
+                 (Contents $?j))
 		 =>
-		 (modify-instance ?id (Contents $?a $?j $?c)))
+         (send ?id put-Contents ?a ?j ?c))
 ;------------------------------------------------------------------------------
 (defrule ClaimOwnership
 		 "Asserts that a region owns another through a subset check. The first 
@@ -140,36 +143,41 @@
 		 (object (is-a FlatList) 
                  (ID ?i0) 
                  (Contents $?c0) 
-                 (Parent ?p0))
+                 (name ?j0))
 		 (object (is-a FlatList) 
                  (ID ?i1&~?i0) 
                  (Contents $?c1) 
-                 (Parent ?p1))
+                 (name ?j1))
          (test (and (> (length$ ?c1)
                        (length$ ?c0))
                     (subsetp ?c0 ?c1)))
 		 =>
-		 (assert (claim ?p1 owns ?p0)))
+         (assert (claim ?j1 owns ?j0)))
 ;------------------------------------------------------------------------------
 (defrule ClaimOwnershipOfBlocks
 		 "This rule is used to assert ownership claims on basic blocks"
 		 (Stage ClaimOwnership $?)
 		 (object (is-a FlatList) 
-                 (Parent ?p) 
+                 (name ?p) 
                  (Contents $? ?b $?))
 		 (object (is-a BasicBlock) 
-                 (ID ?b))
+                 (ID ?b)
+                 (name ?bb))
 		 =>
-		 (assert (claim ?p owns ?b)))
+		 (assert (claim ?p owns ?bb)))
 ;------------------------------------------------------------------------------
 (defrule ClaimEquivalence
 		 "Asserts that two regions are equivalent if one flat list contains the
 		 same elements as a second one."
 		 (Stage ClaimOwnership $?)
 		 ?f0 <- (object (is-a FlatList) 
-                        (ID ?i0) (Contents $?c0) (Parent ?p0))
-		 ?f1 <- (object (is-a FlatList) (ID ?i1&~?i0) (Contents $?c1) 
-						(Parent ?p1))
+                        (ID ?i0) 
+                        (Contents $?c0) 
+                        (name ?p0))
+		 ?f1 <- (object (is-a FlatList) 
+                        (ID ?i1&~?i0) 
+                        (Contents $?c1) 
+                        (name ?p1))
          (test (and (= (length$ ?c1)
                        (length$ ?c0))
                     (subsetp ?c0 ?c1)))
@@ -194,9 +202,9 @@
 		 (Stage Arbitrate $?)
 		 ?f0 <- (claim ?a equivalent ?b)
 		 (object (is-a Loop) 
-                 (ID ?a))
+                 (name ?a))
 		 (object (is-a Region&~Loop) 
-                 (ID ?b))
+                 (name ?b))
 		 =>
 		 (retract ?f0)
 		 (assert (delete region ?b)
@@ -209,8 +217,10 @@
 		 (declare (salience 1))
 		 (Stage Arbitrate $?)
 		 ?f0 <- (claim ?b equivalent ?a)
-		 (object (is-a Loop) (ID ?a))
-		 (object (is-a Region&~Loop) (ID ?b))
+		 (object (is-a Loop) 
+                 (name ?a))
+		 (object (is-a Region&~Loop) 
+                 (name ?b))
 		 =>
 		 (retract ?f0)
 		 (assert (delete region ?b)
@@ -257,11 +267,10 @@
 (defrule DeleteTargetRegion
 		 "Deletes the target region slated for deletion"
 		 (Stage ResolveClaims $?)
-		 ?f0 <- (delete region ?r0)
-		 ?region <- (object (is-a Region) (ID ?r0))
+		 ?f0 <- (delete region ?r)
 		 =>
 		 (retract ?f0)
-		 (unmake-instance ?region))
+         (unmake-instance ?r))
 ;------------------------------------------------------------------------------
 (defrule DeleteFlatLists 
 		 "Deletes all of the flat lists in a single rule fire"
@@ -274,15 +283,19 @@
 ;------------------------------------------------------------------------------
 (defrule PropagateBlockProducers
 		 (Stage ModificationPropagation $?)
-		 (object (is-a BasicBlock) (ID ?b) (Parent ?r) 
-				 (Produces $?produces))
+		 (object (is-a BasicBlock) 
+                 (ID ?b) 
+                 (Parent ?r) 
+                 (Produces $?produces))
 		 =>
 		 (assert (Give ?r from ?b the following produced items $?produces)))
 ;------------------------------------------------------------------------------
 (defrule PropagateRegionProducers-ParentExists
 		 (Stage ModificationPropagation $?)
 		 ?fct <- (Give ?r from ? the following produced items $?produced)
-		 ?region <- (object (is-a Region) (ID ?r) (Parent ?p))
+		 ?region <- (object (is-a Region) 
+                            (ID ?r) 
+                            (Parent ?p))
 		 (exists (object (is-a Region) (ID ?p)))
 		 =>
 		 (retract ?fct)
@@ -298,30 +311,52 @@
 		 (retract ?fct)
 		 (slot-insert$ ?region Produces 1 ?produced))
 ;------------------------------------------------------------------------------
+(defmessage-handler Instruction inject-producers-and-non-local-deps primary
+                    (?op)
+                    (slot-direct-insert$ Producers 
+                                         1
+                                         ?op)
+                    (slot-direct-insert$ NonLocalDependencies
+                                         1
+                                         ?op))
 (defrule IdentifyNonLocalDependencies
 		 (Stage ModificationPropagation $?)
-		 ?i0 <- (object (is-a Instruction) (Parent ?p) (ID ?t0) 
-						(Operands $? ?op $?))
-		 (object (is-a TaggedObject) (ID ?op) (Parent ~?p))
-		 ;(test (not (member$ ?op (send ?i0 get-NonLocalDependencies))))
+		 ?i0 <- (object (is-a Instruction) 
+                        (Parent ?p) 
+                        (ID ?t0) 
+                        (Operands $? ?op $?))
+		 (object (is-a TaggedObject) 
+                 (ID ?op) 
+                 (Parent ~?p))
 		 =>
 		 ;since we don't copy the set of producers at the start anymore we
 		 ;need this operation as well
-		 (slot-insert$ ?i0 Producers 1 ?op)
-		 (slot-insert$ ?i0 NonLocalDependencies 1 ?op))
+         (send ?i0 
+               inject-producers-and-non-local-deps 
+               ?op))
 ;------------------------------------------------------------------------------
 ; Rules for determining ownership of blocks, regions, etc
 ;------------------------------------------------------------------------------
 (defrule ConstructDeterminantForRegionOrBasicBlock
 		 (Stage DeterminantConstruction $?)
 		 (object (is-a Region|BasicBlock) 
-                 (ID ?r))
+                 (name ?r))
 		 (not (exists (object (is-a OwnershipDeterminant) 
                               (Parent ?r))))
 		 =>
 		 (make-instance of OwnershipDeterminant 
                         (Parent ?r)))
 ;------------------------------------------------------------------------------
+(defmessage-handler OwnershipDeterminant add-to-potential-children primary
+                    (?element)
+                    (slot-direct-insert$ PotentialChildren
+                                         1
+                                         ?element))
+(defmessage-handler OwnershipDeterminant add-to-claims primary
+                    (?element)
+                    (slot-direct-insert$ Claims
+                                         1 
+                                         ?element))
 (defrule PopulateDeterminant
          (Stage DeterminantPopulation $?)
          ?fct <- (claim ?a owns ?b)
@@ -333,15 +368,8 @@
                  (name ?obj2))
          =>
          (retract ?fct)
-         (object-pattern-match-delay 
-           (slot-insert$ ?obj2 
-                         PotentialChildren 
-                         1 
-                         ?b)
-           (slot-insert$ ?obj 
-                         Claims 
-                         1 
-                         ?a)))
+         (send ?obj2 add-to-potential-children ?b)
+         (send ?obj add-to-claims ?a))
 ;------------------------------------------------------------------------------
 (defrule DetermineIndirectClaim
 		 (Stage DeterminantResolution $?)
@@ -372,8 +400,10 @@
 ;------------------------------------------------------------------------------
 (defrule DetermineIndirectIndirectClaim
 		 (Stage DeterminantIndirectResolution $?)
-		 ?t0 <- (object (is-a OwnershipDeterminant) (Parent ?b) 
-						(Claims $?l ?a $?x) (IndirectClaims $?ic))
+		 ?t0 <- (object (is-a OwnershipDeterminant) 
+                        (Parent ?b) 
+                        (Claims $?l ?a $?x) 
+                        (IndirectClaims $?ic))
 		 (object (is-a OwnershipDeterminant) (Parent ~?b&~?a) 
 				 (IndirectClaims $? ?a $?) (PotentialChildren $? ?b $?))
 		 ?t1 <- (object (is-a OwnershipDeterminant) (Parent ?a)
