@@ -23,27 +23,19 @@
 ;------------------------------------------------------------------------------
 ; Types.clp - contains all of the types used by wavefront scheduling
 ;------------------------------------------------------------------------------
-(defclass TaggedObject (is-a USER)
-  (slot Class 
-        (visibility public) 
-        (type SYMBOL))
-  (slot ID 
-        (visibility public) 
-        (type SYMBOL))
+(defclass thing 
+ (is-a USER)
   (slot Parent 
         (visibility public) 
         (default-dynamic nil)))
 
-(defmessage-handler TaggedObject init after ()
-					(bind ?self:ID (instance-name-to-symbol (instance-name ?self)))
-					(bind ?self:Class (class ?self)))
 ;------------------------------------------------------------------------------
 (defclass PathAggregate 
   "The PathAggregate is a very useful data structure that keeps track of all
   information regarding paths and scheduling for a given block on the wavefront.
   Like all objects in this project, it is a tagged object so that it can be
   easily queried without knowing it's name directly. "
-  (is-a TaggedObject)
+  (is-a thing)
   (slot OriginalStopIndex (type NUMBER))
   (multislot MemoryInvalid (visibility public))
   (multislot MemoryValid (visibility public))
@@ -62,7 +54,7 @@
   (multislot ImpossibleCompensationPathVectors (visibility public))
   (multislot StalledCompensationPathVectors (visibility public)))
 ;------------------------------------------------------------------------------
-(defclass Slice (is-a TaggedObject)
+(defclass Slice (is-a thing)
   (slot TargetBlock (type SYMBOL) (visibility public))
   (slot TargetPath (type SYMBOL) (visibility public))
   (multislot Contents (visibility public)))
@@ -72,7 +64,7 @@
 (defclass InteropObject (is-a USER)
   (slot Pointer (visibility public) (type NUMBER)))
 ;------------------------------------------------------------------------------
-(defclass LLVMObject (is-a TaggedObject InteropObject)
+(defclass LLVMObject (is-a thing InteropObject)
   (slot Name (visibility public))
   (multislot WritesTo (visibility public))
   (multislot ReadsFrom (visibility public)))
@@ -113,7 +105,7 @@
 ; (bind ?self:ChokedBy (create$ ?self:ChokedBy ?blk)))
 
 ;------------------------------------------------------------------------------
-(defclass List (is-a TaggedObject)
+(defclass List (is-a thing)
   (slot Length (type NUMBER) (default-dynamic 0))
   (multislot Contents (visibility public)))
 
@@ -312,7 +304,7 @@
 (defclass LLVMMDString (is-a LLVMValue)
   (slot String (type STRING)))
 ;------------------------------------------------------------------------------
-(defclass DependencyChain (is-a TaggedObject)
+(defclass DependencyChain (is-a thing)
   (slot Producers (default-dynamic (make-instance (gensym*) of List)))
   (slot Consumers (default-dynamic (make-instance (gensym*) of List))))
 
@@ -369,7 +361,7 @@
 					(return (send ?self:Consumers get-Contents)))
 
 ;------------------------------------------------------------------------------
-(defclass InstructionGroup (is-a TaggedObject)
+(defclass InstructionGroup (is-a thing)
   (multislot Contents (visibility public))
   (slot TimeIndex (type NUMBER) (visibility public)))
 ;------------------------------------------------------------------------------
@@ -484,7 +476,7 @@
 
 
 ;------------------------------------------------------------------------------
-(defclass Schedule (is-a TaggedObject)
+(defclass Schedule (is-a thing)
   (multislot Contents (visibility public))
   (multislot Scheduled (visibility public))
   (multislot Success (visibility public)) 
@@ -699,7 +691,7 @@
 ;------------------------------------------------------------------------------
 (defclass Function (is-a MultiBlockContainer))
 ;------------------------------------------------------------------------------
-(defclass PointerOperandObject (is-a TaggedObject)
+(defclass PointerOperandObject (is-a thing)
   (slot PointerOperand (type SYMBOL)))
 
 (defclass MemoryModifyingObject (is-a PointerOperandObject)
@@ -836,7 +828,7 @@
   (slot Value (type SYMBOL)))
 (defclass ReturnInstruction (is-a TerminatorInstruction)
   (slot ReturnValue (type SYMBOL)))
-(defclass SwitchEntry (is-a TaggedObject)
+(defclass SwitchEntry (is-a thing)
   (slot Index (type NUMBER))
   (slot Target (allowed-classes BasicBlock InteropObject SYMBOL)))
 (defclass SwitchInstruction (is-a TerminatorInstruction)
@@ -912,7 +904,7 @@
 					(bind ?self:BackEdges (create$ ?self:BackEdges ?BLK)))
 
 ;------------------------------------------------------------------------------
-(defclass Replacement (is-a TaggedObject)
+(defclass Replacement (is-a thing)
   (slot Target)
   (multislot With))
 ;------------------------------------------------------------------------------
@@ -926,7 +918,7 @@
 			 (slot To (type SYMBOL))
 			 (multislot Subject (type SYMBOL)))
 ;------------------------------------------------------------------------------
-(defclass CompensationPathVector (is-a TaggedObject)
+(defclass CompensationPathVector (is-a thing)
   (multislot Failures (visibility public))
   (multislot Paths (visibility public))
   (multislot ScheduleTargets (visibility public))
@@ -934,7 +926,7 @@
   (multislot Aliases (visibility public))
   (slot OriginalBlock (visibility public)))
 ;------------------------------------------------------------------------------
-(defclass OwnershipDeterminant (is-a TaggedObject) 
+(defclass OwnershipDeterminant (is-a thing) 
   (multislot Claims)
   (multislot IndirectClaims)
   (multislot PotentialChildren)) 
