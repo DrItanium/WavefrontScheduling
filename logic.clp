@@ -2149,28 +2149,39 @@
          ?fct <- (Marked ?inst as valid for block ?e)
          (not (exists (object (is-a CompensationPathVector) 
                               (parent ?inst))))
+         (object (is-a PathAggregate) 
+                 (parent ?e)
+                 (name ?ag))
          (object (is-a Instruction) 
-                 (name ?inst) (parent ?pv) 
+                 (name ?inst) 
+                 (parent ?pv) 
                  (DestinationRegisters ?reg) 
                  (NonLocalDependencies $?nlds))
-         (object (is-a BasicBlock) (name ?pv) (Paths $?paths))
-         ?pa <- (object (is-a PathAggregate) (name ?ag) (parent ?e))
+         (object (is-a BasicBlock) 
+                 (name ?pv) 
+                 (Paths $?paths))
          =>
          ; We need to disable the stores from moving when their dependencies
          ; 
          ; YOU DON'T EVEN WANT TO KNOW WHAT I'M GOING TO DO TO YOU
          (retract ?fct)
-         (bind ?name (gensym*))
-         (slot-insert$ ?pa CompensationPathVectors 1 ?name)
-         (make-instance ?name of CompensationPathVector (parent ?inst) 
-                        (Paths $?paths) (OriginalBlock ?pv))
-         (if (not (member$ ?inst (send ?pa get-InstructionList))) then 
-           (slot-insert$ ?pa InstructionList 1 ?inst))
-         (if (not (member$ ?reg (send ?pa get-InstructionList))) then
-           (slot-insert$ ?pa InstructionList 1 ?reg))
-         (progn$ (?nld ?nlds)
-                 (if (not (member$ ?nld (send ?pa get-ScheduledInstructions))) 
-                   then (slot-insert$ ?pa ScheduledInstructions 1 ?nld))))
+         (bind ?name 
+               (gensym*))
+         (slot-insert$ ?ag
+                       CompensationPathVectors 
+                       1
+                       (bind ?name
+                             (make-instance of CompensationPathVector
+                                            (parent ?inst)
+                                            (Paths $?paths)
+                                            (OriginalBlock ?pv))))
+         (send ?ag 
+               add-instructions-if-not-member
+               ?inst
+               ?reg)
+         (send ?ag 
+               add-scheduled-instructions-if-not-member
+               ?nlds))
 ;------------------------------------------------------------------------------
 ; Now we go through and attempt to schedule the instruction represented by 
 ; each CPV into the block on the wavefront. I call this stage merge. I had some
@@ -2832,26 +2843,38 @@
          (Stage WavefrontSchedule $?)
          (Substage ScheduleObjectCreation $?)
          ?fct <- (Schedule ?e for ?r)
-         (object (is-a thing&~BasicBlock) (name ?e) (Class ?c))
-         (object (is-a thing&~Region) (name ?r) (Class ?c2))
+         (object (is-a thing&~BasicBlock) 
+                 (name ?e))
+         (object (is-a thing&~Region) 
+                 (name ?r))
          =>
          (printout t "ERROR: Asserted a really wierd schedule fact: " crlf
-                   "What should be a block is a " ?c " named " ?e crlf
-                   "What should be a region is a " ?c2 " named " ?r crlf)
-         (exit))
+                   "What should be a block is a " (class ?e) " named " ?e crlf
+                   "What should be a region is a " (class ?r) " named " ?r crlf)
+         (halt))
 ;------------------------------------------------------------------------------
 (defrule PreschedulePhiNodes
          "Adds all phi nodes into the list of scheduled instructions.
          We can always assume they are ready to go too!"
          (Stage WavefrontSchedule $?)
          (Substage ScheduleObjectCreation $?)
-         ?schedObj <- (object (is-a Schedule) (name ?n) (parent ?p) 
-                              (Scheduled $?s))
-         (object (is-a BasicBlock) (name ?p) (Contents $? ?c $?))
-         (object (is-a PhiNode) (name ?c))
+         (object (is-a Schedule) 
+                 (name ?n) 
+                 (parent ?p) 
+                 (Scheduled $?s))
+         (object (is-a BasicBlock) 
+                 (name ?p) 
+                 (Contents $? ?c $?))
+         (object (is-a PhiNode) 
+                 (name ?c))
          (test (not (member$ ?c ?s)))
          =>
-         (modify-instance ?schedObj (Scheduled $?s ?c)))
+         (slot-insert$ ?n
+                       Scheduled
+                       1
+                       ?c))
+;         (modify-instance ?n
+;                          (Scheduled $?s ?c)))
 ;------------------------------------------------------------------------------
 (defrule PrescheduleNonLocals
          "Marks all non local instructions as already scheduled. With the way 
@@ -3981,8 +4004,7 @@
                              (Pointer ?nPtr) 
                              (parent ?otherBlock) 
                              (DestinationRegisters ?register) 
-                             (Consumers $?niConsumers)
-                             (Class ?class))
+                             (Consumers $?niConsumers))
          ?oldBlock <- (object (is-a BasicBlock) 
                               (name ?otherBlock) 
                               (Produces $?pBefore ?inst $?pRest)
@@ -4001,7 +4023,8 @@
                    ;(send ?newInst get-Consumers))
                    (Recompute block ?otherBlock))
            (retract ?fct)
-           (if (eq StoreInstruction ?class) then 
+           (if (eq (class ?inst)
+                   StoreInstruction) then
              (modify-instance ?agObj 
                               (ScheduledInstructions $?agSI ?inst ?register)
                               (ReplacementActions $?agRA ?inst ?inst !))
@@ -4071,16 +4094,18 @@
                              (name ?inst) 
                              (Pointer ?nPtr) 
                              (parent ?otherBlock) 
-                             (DestinationRegisters ?register) 
-                             (Class ?class))
+                             (DestinationRegisters ?register))
          =>
          ;we also need to update all CPVs within 
          (retract ?fct)
          (object-pattern-match-delay
-           (bind ?newName (sym-cat compensation.copy. (gensym*) . ?inst))
-           ;(printout t "Scheduled " ?inst " into " ?e " from " ?otherBlock 
-           ;            " as " ?newName crlf)
-           (bind ?newPtr (llvm-clone-instruction ?nPtr ?newName))
+           (bind ?newName 
+                 (sym-cat compensation.copy.
+                          (gensym*). 
+                          ?inst))
+           (bind ?newPtr 
+                 (llvm-clone-instruction ?nPtr 
+                                         ?newName))
            ;purge the list of producers and consumers
            (duplicate-instance ?inst to ?newName 
                                (name ?newName) 
@@ -4088,11 +4113,13 @@
                                (Pointer ?newPtr) 
                                (parent ?e)
                                (TimeIndex (+ ?ti 1)))
-           (llvm-move-instruction-before ?newPtr ?tPtr)
+           (llvm-move-instruction-before ?newPtr 
+                                         ?tPtr)
            ;we add the original name so that we don't have to do
            ; an insane number of updates to the CPVs that follow
            ; this object
-           (if (eq StoreInstruction ?class) then 
+           (if (eq (class ?inst)
+                   StoreInstruction) then
              (slot-insert$ ?agObj ScheduledInstructions 1 ?inst ?register)
              else
              (slot-insert$ ?agObj InstructionPropagation 1 ?inst ?newName ?e !)
