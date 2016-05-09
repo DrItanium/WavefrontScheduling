@@ -28,8 +28,8 @@
 ; the changes here :). Uncomment the line below to enable debug mode :D
 
 (deffacts debug-stats 
- ;(Debug)
- ;(Profile)
+ (Debug)
+ (Profile)
  ;(Rules)
  ;(Blocks)
  ;(Children)
