@@ -515,24 +515,6 @@
          (printout t "ERROR: BasicBlock " ?a " has no remaining claims!" crlf 
                    ?a " has " $?pc " as it's potential children." crlf
                    ?a " has " $?ic " as it's indirect claims." crlf)
-         (send ?a 
-               print)
-         (printout t crlf)
-         (send ?x 
-               print)
-         (printout t crlf)
-         (send (send ?a 
-                     get-Parent) 
-               print)
-         (printout t crlf)
-         (send (send (send ?a 
-                           get-Parent) 
-                     get-Parent) 
-               print)
-         (printout t crlf)
-         (instances)
-         (printout t crlf)
-         (facts)
          (halt))
 ;------------------------------------------------------------------------------
 ; The Analysis stage is the first stage that takes place when LLVM hands off
@@ -566,7 +548,8 @@
          (not (exists (object (is-a FrequencyAnalysis) 
                               (Parent ?p))))
          =>
-         (make-instance of FrequencyAnalysis (Parent ?p)))
+         (make-instance of FrequencyAnalysis 
+                        (Parent ?p)))
 ;------------------------------------------------------------------------------
 (defrule IncrementFrequencyCounter-BasicBlock
          "Goes through a given Region counting the number of basic blocks found
@@ -580,9 +563,12 @@
                  (Contents $? ?t $?) 
                  (CanWavefrontSchedule FALSE))
          (object (is-a BasicBlock) 
-                 (name ?t) (Parent ?p) (Contents $?insts))
+                 (name ?t) 
+                 (Parent ?p) 
+                 (Contents $?insts))
          (test (> (length$ $?insts) 1))
-         ?fa <- (object (is-a FrequencyAnalysis) (Parent ?p))
+         ?fa <- (object (is-a FrequencyAnalysis) 
+                        (Parent ?p))
          =>
          (send ?fa .IncrementFrequency))
 ;------------------------------------------------------------------------------
