@@ -137,18 +137,28 @@
 		 "Asserts that a region owns another through a subset check. The first 
 		 flat list is checked to see if it is a _proper_ subset of the second"
 		 (Stage ClaimOwnership $?)
-		 ?f0 <- (object (is-a FlatList) (ID ?i0) (Contents $?c0) (Parent ?p0))
-		 ?f1 <- (object (is-a FlatList) (ID ?i1&~?i0) (Contents $?c1) 
-						(Parent ?p1))
-		 (test (and (subsetp ?c0 ?c1) (> (length$ ?c1) (length$ ?c0))))
+		 (object (is-a FlatList) 
+                 (ID ?i0) 
+                 (Contents $?c0) 
+                 (Parent ?p0))
+		 (object (is-a FlatList) 
+                 (ID ?i1&~?i0) 
+                 (Contents $?c1) 
+                 (Parent ?p1))
+         (test (and (> (length$ ?c1)
+                       (length$ ?c0))
+                    (subsetp ?c0 ?c1)))
 		 =>
 		 (assert (claim ?p1 owns ?p0)))
 ;------------------------------------------------------------------------------
 (defrule ClaimOwnershipOfBlocks
 		 "This rule is used to assert ownership claims on basic blocks"
 		 (Stage ClaimOwnership $?)
-		 ?f0 <- (object (is-a FlatList) (Parent ?p) (Contents $? ?b $?))
-		 (object (is-a BasicBlock) (ID ?b))
+		 (object (is-a FlatList) 
+                 (Parent ?p) 
+                 (Contents $? ?b $?))
+		 (object (is-a BasicBlock) 
+                 (ID ?b))
 		 =>
 		 (assert (claim ?p owns ?b)))
 ;------------------------------------------------------------------------------
@@ -156,10 +166,13 @@
 		 "Asserts that two regions are equivalent if one flat list contains the
 		 same elements as a second one."
 		 (Stage ClaimOwnership $?)
-		 ?f0 <- (object (is-a FlatList) (ID ?i0) (Contents $?c0) (Parent ?p0))
+		 ?f0 <- (object (is-a FlatList) 
+                        (ID ?i0) (Contents $?c0) (Parent ?p0))
 		 ?f1 <- (object (is-a FlatList) (ID ?i1&~?i0) (Contents $?c1) 
 						(Parent ?p1))
-		 (test (and (subsetp ?c0 ?c1) (= (length$ ?c1) (length$ ?c0))))
+         (test (and (= (length$ ?c1)
+                       (length$ ?c0))
+                    (subsetp ?c0 ?c1)))
 		 =>
 		 (assert (claim ?p1 equivalent ?p0)))
 ;------------------------------------------------------------------------------
@@ -168,11 +181,10 @@
 		 fact"
 		 (declare (salience -1))
 		 (Stage ClaimOwnership $?)
-		 ?f0 <- (claim ?a equivalent ?b)
-		 ?f1 <- (claim ?b equivalent ?a)
+		 (claim ?a equivalent ?b)
+         ?f1 <- (claim ?b equivalent ?a)
 		 =>
-		 (retract ?f0 ?f1)
-		 (assert (claim ?a equivalent ?b)))
+		 (retract ?f1))
 ;------------------------------------------------------------------------------
 (defrule EliminateEquivalences-LoopFirst
 		 "If we find an equivalence then it means that a loop and a region 
@@ -181,8 +193,10 @@
 		 (declare (salience 1))
 		 (Stage Arbitrate $?)
 		 ?f0 <- (claim ?a equivalent ?b)
-		 (object (is-a Loop) (ID ?a))
-		 (object (is-a Region&~Loop) (ID ?b))
+		 (object (is-a Loop) 
+                 (ID ?a))
+		 (object (is-a Region&~Loop) 
+                 (ID ?b))
 		 =>
 		 (retract ?f0)
 		 (assert (delete region ?b)
@@ -298,36 +312,42 @@
 ;------------------------------------------------------------------------------
 ; Rules for determining ownership of blocks, regions, etc
 ;------------------------------------------------------------------------------
-(defrule ConstructDeterminantForRegion
+(defrule ConstructDeterminantForRegionOrBasicBlock
 		 (Stage DeterminantConstruction $?)
-		 (object (is-a Region) (ID ?r))
-		 (not (exists (object (is-a OwnershipDeterminant) (Parent ?r))))
+		 (object (is-a Region|BasicBlock) 
+                 (ID ?r))
+		 (not (exists (object (is-a OwnershipDeterminant) 
+                              (Parent ?r))))
 		 =>
-		 (make-instance of OwnershipDeterminant (Parent ?r)))
-;------------------------------------------------------------------------------
-(defrule ConstructDeterminantForBasicBlock
-		 (Stage DeterminantConstruction $?)
-		 (object (is-a BasicBlock) (ID ?b))
-		 (not (exists (object (is-a OwnershipDeterminant) (Parent ?b))))
-		 =>
-		 (make-instance of OwnershipDeterminant (Parent ?b)))
+		 (make-instance of OwnershipDeterminant 
+                        (Parent ?r)))
 ;------------------------------------------------------------------------------
 (defrule PopulateDeterminant
-		 (Stage DeterminantPopulation $?)
-		 ?fct <- (claim ?a owns ?b)
-		 ?obj <- (object (is-a OwnershipDeterminant) (Parent ?b))
-		 ?obj2 <- (object (is-a OwnershipDeterminant) (Parent ?a))
-		 =>
-		 (retract ?fct)
-		 (object-pattern-match-delay 
-		   (slot-insert$ ?obj2 PotentialChildren 1 ?b)
-		   (slot-insert$ ?obj Claims 1 ?a)))
+         (Stage DeterminantPopulation $?)
+         ?fct <- (claim ?a owns ?b)
+         (object (is-a OwnershipDeterminant) 
+                 (Parent ?b)
+                 (name ?obj))
+         (object (is-a OwnershipDeterminant) 
+                 (Parent ?a)
+                 (name ?obj2))
+         =>
+         (retract ?fct)
+         (object-pattern-match-delay 
+           (slot-insert$ ?obj2 
+                         PotentialChildren 
+                         1 
+                         ?b)
+           (slot-insert$ ?obj 
+                         Claims 
+                         1 
+                         ?a)))
 ;------------------------------------------------------------------------------
 (defrule DetermineIndirectClaim
 		 (Stage DeterminantResolution $?)
 		 (object (is-a OwnershipDeterminant) 
                  (Parent ?b) 
-                 (Claims $?b0 ?a $?a0) 
+                 (Claims $?b0 ?a $?a0)
                  (IndirectClaims $?ic)
                  (name ?o0))
 		 (object (is-a OwnershipDeterminant) 
@@ -963,8 +983,11 @@
 		 (declare (salience -9))
 		 (Stage Analysis $?)
 		 ?fct <- (element ?p reads from $?t)
-		 ?bb <- (object (is-a Diplomat) (ID ?p) (Parent ?q))
-		 (exists (object (is-a Diplomat) (ID ?q)))
+		 ?bb <- (object (is-a Diplomat) 
+                        (ID ?p)
+                        (Parent ?q))
+         (object (is-a Diplomat)
+                 (ID ?q))
 		 =>
 		 (retract ?fct)
 		 (assert (element ?q reads from ?t))
