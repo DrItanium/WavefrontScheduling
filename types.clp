@@ -24,10 +24,11 @@
 ; Types.clp - contains all of the types used by wavefront scheduling
 ;------------------------------------------------------------------------------
 (defclass thing 
- (is-a USER)
-  (slot Parent 
-        (visibility public) 
-        (default-dynamic nil)))
+  (is-a USER)
+  (slot parent 
+        (type SYMBOL
+              INSTANCE)
+        (visibility public)))
 
 ;------------------------------------------------------------------------------
 (defclass PathAggregate 
