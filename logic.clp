@@ -325,17 +325,28 @@
 ;------------------------------------------------------------------------------
 (defrule DetermineIndirectClaim
 		 (Stage DeterminantResolution $?)
-		 ?t0 <- (object (is-a OwnershipDeterminant) (Parent ?b) 
-						(Claims $?v ?a $?x) (IndirectClaims $?ic))
-		 (object (is-a OwnershipDeterminant) (Parent ~?b) 
-				 (PotentialChildren $? ?b $?) (Claims $? ?a $?))
-		 ?t1 <- (object (is-a OwnershipDeterminant) (Parent ?a) 
-						(PotentialChildren $?t ?b $?r))
+		 ?t0 <- (object (is-a OwnershipDeterminant) 
+                        (Parent ?b) 
+                        (Claims $?v ?a $?x) 
+                        (IndirectClaims $?ic))
+		 (object (is-a OwnershipDeterminant) 
+                 (Parent ~?b) 
+                 (PotentialChildren $? ?b $?) 
+                 (Claims $? ?a $?))
+		 ?t1 <- (object (is-a OwnershipDeterminant) 
+                        (Parent ?a) 
+                        (PotentialChildren $?t ?b $?r))
 		 =>
 		 ;let's see if this is faster
 		 (object-pattern-match-delay 
-		   (modify-instance ?t0 (IndirectClaims ?ic ?a) (Claims ?v ?x))
-		   (modify-instance ?t1 (PotentialChildren ?t ?r))))
+           (slot-insert$ ?t0
+                         IndirectClaims
+                         1
+                         ?a)
+           (modify-instance ?t0 
+                            (Claims ?v ?x))
+           (modify-instance ?t1 
+                            (PotentialChildren ?t ?r))))
 ;------------------------------------------------------------------------------
 (defrule DetermineIndirectIndirectClaim
 		 (Stage DeterminantIndirectResolution $?)
